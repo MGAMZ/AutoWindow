@@ -1,0 +1,247 @@
+from mmengine.config import read_base
+with read_base():
+    from ..base import *
+
+from torch.optim import AdamW
+
+from mmengine.runner import IterBasedTrainLoop
+from mmengine.optim.scheduler import CosineAnnealingLR
+from mmengine._strategy import FSDPStrategy
+from mmengine.optim import OptimWrapper, AmpOptimWrapper
+from mmengine.dataset.sampler import DefaultSampler, InfiniteSampler
+from mmseg.datasets.transforms import PackSegInputs, RandomRotate, RandomCrop, RandomFlip
+from mmseg.models.data_preprocessor import SegDataPreProcessor
+from mmseg.models.segmentors import EncoderDecoder
+from mmseg.models.losses import DiceLoss
+
+from mgamdata.models.MedNeXt import MM_MedNext_Encoder, MM_MedNext_Decoder_Vallina
+from mgamdata.mm.Totalsegmentator import TotalsegmentatorDataset
+from mgamdata.mm.mmseg_PlugIn import IoUMetric_PerClass
+from mgamdata.mm.mmeng_PlugIn import RemasteredDDP, RemasteredFSDP
+from mgamdata.process.GeneralPreProcess import WindowSet, TypeConvert, RandomRoll
+from mgamdata.process.LoadBiomedicalData import LoadImgFromOpenCV, LoadAnnoFromOpenCV
+
+
+# 环境
+debug    = True                        # 调试模式
+use_AMP  = True                         # AMP加速
+dist     = True if not debug else False     # 多卡训练总控
+use_FSDP = False if not debug else False    # 多卡训练FSDP高级模式
+Compile  = True if not debug else False     # torch.dynamo
+workers  = 0 if debug else 4            # DataLoader Worker
+
+# 数据路径
+data_root = "/fileser51/zhangyiqin.sx/Totalsegmentator_Data/Totalsegmentator_dataset_v201_openmm"
+
+# 窗宽位
+wl = 40     # 窗位 40-60     Optimum: 40
+ww = 400    # 窗宽 300-400   Optimum: 400
+
+# 神经网络超参
+lr = 1e-4
+batch_size = 4
+embed_dims = 64
+in_channels = 1
+num_classes = 5
+size = (512,512)    # 单次前向处理的分辨率, 不限制推理
+use_checkpoint = False  # torch.checkpoint
+
+# 流程控制
+iters = 500000 if not debug else 3
+logger_interval = 500 if not debug else 1
+save_interval = 5000 if not debug else 2
+val_on_train = True
+val_interval = 1 if not debug else 2
+dynamic_intervals = [   # 动态验证间隔
+    (5, 5),
+    (50, 10),
+    (100, 25),
+    (300, 100),
+    (1000, 250),
+    (3000, 500),
+    (5000, 1000),
+    (20000, 5000)
+]
+
+
+
+# --------------------PARAMETERS-------------------- #
+# ////////////////////////////////////////////////// #
+# \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ #
+# --------------------COMPONENTS-------------------- #
+
+
+# 数据读取与预处理管线
+train_pipeline = [
+    dict(type=LoadImgFromOpenCV),
+    dict(type=LoadAnnoFromOpenCV),
+    # dict(type=RandomCrop, crop_size=size, ignore_index=None),
+    dict(type=RandomRoll, direction=['horizontal', 'vertical'], gap=[256, 256],
+         erase=False, pad_val=-1000, seg_pad_val=0),
+    dict(type=RandomRotate, prob=1.0, degree=180, pad_val=-1000, seg_pad_val=0),
+    dict(type=RandomFlip, prob=[0.5, 0.5], direction=['horizontal', 'vertical']),
+    dict(type=WindowSet, location=wl, width=ww),
+    dict(type=TypeConvert),
+    dict(type=PackSegInputs)
+]
+val_pipeline = [
+    dict(type=LoadImgFromOpenCV),
+    dict(type=LoadAnnoFromOpenCV),
+    dict(type=WindowSet, location=wl, width=ww),
+    dict(type=TypeConvert),
+    dict(type=PackSegInputs)
+]
+test_pipeline = [
+    dict(type=LoadImgFromOpenCV),
+    dict(type=LoadAnnoFromOpenCV),
+    dict(type=WindowSet, location=wl, width=ww),
+    dict(type=TypeConvert),
+    dict(type=PackSegInputs),
+]
+
+# （不重要）构建dataloader
+train_dataloader = dict(
+    batch_size=batch_size,
+    num_workers=workers,
+    drop_last=False if debug else True,
+    pin_memory=False,
+    persistent_workers=True if workers > 0 else False,
+    sampler=dict(type=InfiniteSampler, shuffle=False if debug else True),
+    dataset=dict(
+        type=TotalsegmentatorDataset,
+        data_root=data_root,
+        pipeline = train_pipeline,
+    ),
+)
+val_dataloader = dict(
+    batch_size=batch_size,
+    num_workers=workers//2,
+    pin_memory=False,
+    persistent_workers=True if workers > 0 else False,
+    sampler=dict(type=DefaultSampler, shuffle=False),
+    dataset=dict(
+        type=TotalsegmentatorDataset,
+        data_root=data_root,
+        pipeline=test_pipeline,
+    ),
+)
+test_dataloader = dict(
+    batch_size=batch_size,
+    num_workers=workers//2,
+    pin_memory=False,
+    persistent_workers=True if workers > 0 else False,
+    sampler=dict(type=DefaultSampler, shuffle=False),
+    dataset=dict(
+        type=TotalsegmentatorDataset,
+        data_root=data_root,
+        pipeline=test_pipeline,
+    ),
+)
+
+# （不重要）构建评估器
+val_evaluator = test_evaluator = dict(
+    type=IoUMetric_PerClass, 
+    ignore_index=None, 
+    iou_metrics=['mIoU','mDice'], 
+    prefix='Perf')
+if not val_on_train:
+    val_dataloader = None
+    val_evaluator = None
+    val_cfg = None
+
+# （不重要）MM框架数据传输与规范化中间件
+data_preprocessor = dict(
+    type=SegDataPreProcessor,
+    size=size,
+)
+
+# 神经网络设定
+model = dict(
+    type = EncoderDecoder,
+    backbone = dict(
+        type=MM_MedNext_Encoder,
+        in_channels=in_channels,
+        embed_dims=embed_dims,
+    ),
+    decode_head = dict(
+        type=MM_MedNext_Decoder_Vallina,
+        embed_dims=embed_dims,
+        num_classes=num_classes,
+        out_channels=num_classes,
+        threshold=0.3,
+        norm_cfg=None,
+        align_corners=False,
+        ignore_index=None,
+        loss_decode=dict(type=DiceLoss, 
+                         use_sigmoid=False,
+                         ignore_index=None),
+    ),
+    test_cfg=dict(mode='slide', 
+                  crop_size=size,
+                  stride=[i//3 for i in size]),
+)
+
+
+# 训练策略
+train_cfg = dict(type=IterBasedTrainLoop,
+                 max_iters=iters, 
+                 val_interval=val_interval,
+                 dynamic_intervals=dynamic_intervals,)
+
+# 优化器
+optim_wrapper = dict(
+    type=AmpOptimWrapper if use_AMP else OptimWrapper, 
+    optimizer=dict(type=AdamW,
+                   lr=lr,
+                   weight_decay=1e-2),
+    clip_grad=dict(max_norm=1, 
+                   norm_type=2, 
+                   error_if_nonfinite=False)
+)
+
+# 学习率调整策略
+param_scheduler = [
+    dict(
+        type=CosineAnnealingLR,
+        T_max=iters,
+        eta_min_ratio=0.05,
+        by_epoch=False,
+        begin=0,
+        end=iters*0.9)
+]
+
+# （不重要）Hooks
+default_hooks.update(
+    checkpoint=dict(
+        interval=save_interval,
+        save_best='Perf/mDice' if not debug else None,
+        rule='greater' if not debug else None,
+        save_last=True if not debug else True),
+    logger=dict(interval=logger_interval),
+    visualization=dict(
+        window_width=ww, 
+        window_location=wl, 
+        interval=50 if not debug else 1))
+
+# torch.dynamo
+compile = dict(
+    fullgraph=False,
+    dynamic=False,
+    disable=not Compile,
+)
+
+# 分布式训练
+if dist:
+    launcher = 'pytorch'
+    if use_FSDP:
+        strategy = dict(
+            type = FSDPStrategy,
+            model_wrapper = dict(type=RemasteredFSDP),
+        )
+    else:
+        model_wrapper_cfg=dict(type=RemasteredDDP)
+else:
+    launcher = 'none'
+
+# 断点续训
+resume=True
