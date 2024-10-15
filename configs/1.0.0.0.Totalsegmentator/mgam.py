@@ -2,7 +2,7 @@ from mmengine.config import read_base
 with read_base():
     from ..base import *
 
-from torch.optim import AdamW
+from torch.optim.adamw import AdamW
 
 from mmengine.runner import IterBasedTrainLoop
 from mmengine.optim.scheduler import CosineAnnealingLR
