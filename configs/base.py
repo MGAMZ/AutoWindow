@@ -1,5 +1,6 @@
 # mmsegmentation
 from mmseg.visualization import SegLocalVisualizer
+from mmseg.engine.hooks import SegVisualizationHook
 
 # mmengine
 from mmengine.runner import ValLoop
@@ -14,7 +15,6 @@ from mmengine.visualization import TensorboardVisBackend
 
 # customize
 from mgamdata.mm.mmeng_PlugIn import LoggerJSON
-from mgamdata.mm.sarcopenia_dataset import CT_VisualizationHook
 
 
 
@@ -31,7 +31,7 @@ default_hooks = dict(
                     by_epoch=False, 
                     max_keep_ckpts=1),
     sampler_seed=dict(type=DistSamplerSeedHook),
-    visualization=dict(type=CT_VisualizationHook, 
+    visualization=dict(type=SegVisualizationHook, 
                        draw=True),
 )
 

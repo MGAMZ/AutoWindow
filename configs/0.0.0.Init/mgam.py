@@ -9,13 +9,13 @@ from mmengine.optim.scheduler import CosineAnnealingLR
 from mmengine._strategy import FSDPStrategy
 from mmengine.optim import OptimWrapper, AmpOptimWrapper
 from mmengine.dataset.sampler import DefaultSampler, InfiniteSampler
-from mmseg.datasets.transforms import PackSegInputs, RandomRotate, RandomCrop, RandomFlip
+from mmseg.datasets.transforms import PackSegInputs, RandomRotate, RandomCrop, RandomFlip, Resize
 from mmseg.models.data_preprocessor import SegDataPreProcessor
 from mmseg.models.segmentors import EncoderDecoder
 from mmseg.models.losses import DiceLoss
 
+from mgamdata.dataset.Totalsegmentator.mm_dataset import TotalsegmentatorDataset
 from mgamdata.models.MedNeXt import MM_MedNext_Encoder, MM_MedNext_Decoder_Vallina
-from mgamdata.mm.Totalsegmentator import TotalsegmentatorDataset
 from mgamdata.mm.mmseg_PlugIn import IoUMetric_PerClass
 from mgamdata.mm.mmeng_PlugIn import RemasteredDDP, RemasteredFSDP
 from mgamdata.process.GeneralPreProcess import WindowSet, TypeConvert, RandomRoll
@@ -75,7 +75,7 @@ dynamic_intervals = [   # 动态验证间隔
 train_pipeline = [
     dict(type=LoadImgFromOpenCV),
     dict(type=LoadAnnoFromOpenCV),
-    # dict(type=RandomCrop, crop_size=size, ignore_index=None),
+    dict(type=Resize, scale=size),
     dict(type=RandomRoll, direction=['horizontal', 'vertical'], gap=[256, 256],
          erase=False, pad_val=-1000, seg_pad_val=0),
     dict(type=RandomRotate, prob=1.0, degree=180, pad_val=-1000, seg_pad_val=0),
@@ -84,19 +84,13 @@ train_pipeline = [
     dict(type=TypeConvert),
     dict(type=PackSegInputs)
 ]
-val_pipeline = [
+val_pipeline = test_pipeline = [
     dict(type=LoadImgFromOpenCV),
-    dict(type=LoadAnnoFromOpenCV),
+    dict(type=Resize, scale=size),
     dict(type=WindowSet, location=wl, width=ww),
+    dict(type=LoadAnnoFromOpenCV),
     dict(type=TypeConvert),
     dict(type=PackSegInputs)
-]
-test_pipeline = [
-    dict(type=LoadImgFromOpenCV),
-    dict(type=LoadAnnoFromOpenCV),
-    dict(type=WindowSet, location=wl, width=ww),
-    dict(type=TypeConvert),
-    dict(type=PackSegInputs),
 ]
 
 # （不重要）构建dataloader
@@ -218,10 +212,7 @@ default_hooks.update(
         rule='greater' if not debug else None,
         save_last=True if not debug else True),
     logger=dict(interval=logger_interval),
-    visualization=dict(
-        window_width=ww, 
-        window_location=wl, 
-        interval=50 if not debug else 1))
+    visualization=dict(interval=50 if not debug else 1))
 
 # torch.dynamo
 compile = dict(
