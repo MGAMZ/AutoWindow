@@ -17,8 +17,6 @@ from mgamdata.mm.mmeng_PlugIn import LoggerJSON
 from mgamdata.mm.sarcopenia_dataset import CT_VisualizationHook
 
 
-
-
 # Task Control
 val_cfg  = dict(type=ValLoop, fp16=True)
 test_cfg = dict(type=TestLoop)
