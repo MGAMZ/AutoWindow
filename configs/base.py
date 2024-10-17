@@ -17,8 +17,6 @@ from mmengine.visualization import TensorboardVisBackend
 from mgamdata.mm.mmeng_PlugIn import LoggerJSON
 
 
-
-
 # Task Control
 val_cfg  = dict(type=ValLoop, fp16=True)
 test_cfg = dict(type=TestLoop)
