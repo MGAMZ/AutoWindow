@@ -166,3 +166,4 @@ totalsegmentator_examples/*
 .vscode
 work_dirs
 test_dirs
+*.ipynb
