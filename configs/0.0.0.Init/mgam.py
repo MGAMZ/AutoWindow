@@ -2,6 +2,7 @@ from mmengine.config import read_base
 with read_base():
     from ..base import *
 
+from os.path import join
 from torch.optim.adamw import AdamW
 
 from mmengine.runner import IterBasedTrainLoop
@@ -14,7 +15,8 @@ from mmseg.models.data_preprocessor import SegDataPreProcessor
 from mmseg.models.segmentors import EncoderDecoder
 from mmseg.models.losses import DiceLoss
 
-from mgamdata.dataset.Totalsegmentator.mm_dataset import TotalsegmentatorDataset
+from mgamdata.dataset.Totalsegmentator.meta import DATA_ROOT
+from mgamdata.dataset.Totalsegmentator.mm_dataset import TotalsegmentatorSegDataset
 from mgamdata.models.MedNeXt import MM_MedNext_Encoder, MM_MedNext_Decoder_Vallina
 from mgamdata.mm.mmseg_PlugIn import IoUMetric_PerClass
 from mgamdata.mm.mmeng_PlugIn import RemasteredDDP, RemasteredFSDP
@@ -31,7 +33,7 @@ Compile  = True if not debug else False     # torch.dynamo
 workers  = 0 if debug else 4            # DataLoader Worker
 
 # 数据路径
-data_root = "/fileser51/zhangyiqin.sx/Totalsegmentator_Data/Totalsegmentator_dataset_v201_openmm"
+data_root = join(DATA_ROOT, 'Totalsegmentator_dataset_v201_OpenmmTIFF')
 
 # 窗宽位
 wl = 40     # 窗位 40-60     Optimum: 40
@@ -52,16 +54,17 @@ logger_interval = 500 if not debug else 1
 save_interval = 5000 if not debug else 2
 val_on_train = True
 val_interval = 1 if not debug else 2
-dynamic_intervals = [   # 动态验证间隔
-    (5, 5),
-    (50, 10),
-    (100, 25),
-    (300, 100),
-    (1000, 250),
-    (3000, 500),
-    (5000, 1000),
-    (20000, 5000)
-]
+dynamic_intervals = None
+# dynamic_intervals = [   # 动态验证间隔
+#     (5, 5),
+#     (50, 10),
+#     (100, 25),
+#     (300, 100),
+#     (1000, 250),
+#     (3000, 500),
+#     (5000, 1000),
+#     (20000, 5000)
+# ]
 
 
 
@@ -102,7 +105,7 @@ train_dataloader = dict(
     persistent_workers=True if workers > 0 else False,
     sampler=dict(type=InfiniteSampler, shuffle=False if debug else True),
     dataset=dict(
-        type=TotalsegmentatorDataset,
+        type=TotalsegmentatorSegDataset,
         data_root=data_root,
         pipeline = train_pipeline,
     ),
@@ -114,7 +117,7 @@ val_dataloader = dict(
     persistent_workers=True if workers > 0 else False,
     sampler=dict(type=DefaultSampler, shuffle=False),
     dataset=dict(
-        type=TotalsegmentatorDataset,
+        type=TotalsegmentatorSegDataset,
         data_root=data_root,
         pipeline=test_pipeline,
     ),
@@ -126,7 +129,7 @@ test_dataloader = dict(
     persistent_workers=True if workers > 0 else False,
     sampler=dict(type=DefaultSampler, shuffle=False),
     dataset=dict(
-        type=TotalsegmentatorDataset,
+        type=TotalsegmentatorSegDataset,
         data_root=data_root,
         pipeline=test_pipeline,
     ),
@@ -205,7 +208,7 @@ param_scheduler = [
 ]
 
 # （不重要）Hooks
-default_hooks.update(
+default_hooks.update(   # type: ignore
     checkpoint=dict(
         interval=save_interval,
         save_best='Perf/mDice' if not debug else None,
