@@ -25,7 +25,7 @@ from mgamdata.process.LoadBiomedicalData import LoadImgFromOpenCV, LoadAnnoFromO
 
 
 # 环境
-debug    = True                        # 调试模式
+debug    = True                         # 调试模式
 use_AMP  = True                         # AMP加速
 dist     = True if not debug else False     # 多卡训练总控
 use_FSDP = False if not debug else False    # 多卡训练FSDP高级模式
@@ -33,7 +33,7 @@ Compile  = True if not debug else False     # torch.dynamo
 workers  = 0 if debug else 4            # DataLoader Worker
 
 # 数据路径
-data_root = join(DATA_ROOT, 'Totalsegmentator_dataset_v201_OpenmmTIFF')
+data_root = join(DATA_ROOT, 'slice2D_tiff')
 
 # 窗宽位
 wl = 40     # 窗位 40-60     Optimum: 40
