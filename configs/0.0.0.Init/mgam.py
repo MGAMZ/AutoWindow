@@ -2,7 +2,6 @@ from mmengine.config import read_base
 with read_base():
     from ..base import *
 
-from os.path import join
 from torch.optim.adamw import AdamW
 
 from mmengine.runner import IterBasedTrainLoop
@@ -32,9 +31,6 @@ use_FSDP = False if not debug else False    # 多卡训练FSDP高级模式
 Compile  = True if not debug else False     # torch.dynamo
 workers  = 0 if debug else 4            # DataLoader Worker
 
-# 数据路径
-data_root = join(DATA_ROOT, 'slice2D_tiff')
-
 # 窗宽位
 wl = 40     # 窗位 40-60     Optimum: 40
 ww = 400    # 窗宽 300-400   Optimum: 400
@@ -42,7 +38,7 @@ ww = 400    # 窗宽 300-400   Optimum: 400
 # 神经网络超参
 lr = 1e-4
 batch_size = 4
-embed_dims = 64
+embed_dims = 16
 in_channels = 1
 num_classes = 5
 size = (512,512)    # 单次前向处理的分辨率, 不限制推理
@@ -106,7 +102,7 @@ train_dataloader = dict(
     sampler=dict(type=InfiniteSampler, shuffle=False if debug else True),
     dataset=dict(
         type=TotalsegmentatorSegDataset,
-        data_root=data_root,
+        split='train',
         pipeline = train_pipeline,
     ),
 )
@@ -118,7 +114,7 @@ val_dataloader = dict(
     sampler=dict(type=DefaultSampler, shuffle=False),
     dataset=dict(
         type=TotalsegmentatorSegDataset,
-        data_root=data_root,
+        split='val',
         pipeline=test_pipeline,
     ),
 )
@@ -130,7 +126,7 @@ test_dataloader = dict(
     sampler=dict(type=DefaultSampler, shuffle=False),
     dataset=dict(
         type=TotalsegmentatorSegDataset,
-        data_root=data_root,
+        split='test',
         pipeline=test_pipeline,
     ),
 )
@@ -150,32 +146,6 @@ if not val_on_train:
 data_preprocessor = dict(
     type=SegDataPreProcessor,
     size=size,
-)
-
-# 神经网络设定
-model = dict(
-    type = EncoderDecoder,
-    backbone = dict(
-        type=MM_MedNext_Encoder,
-        in_channels=in_channels,
-        embed_dims=embed_dims,
-    ),
-    decode_head = dict(
-        type=MM_MedNext_Decoder_Vallina,
-        embed_dims=embed_dims,
-        num_classes=num_classes,
-        out_channels=num_classes,
-        threshold=0.3,
-        norm_cfg=None,
-        align_corners=False,
-        ignore_index=None,
-        loss_decode=dict(type=DiceLoss, 
-                         use_sigmoid=False,
-                         ignore_index=None),
-    ),
-    test_cfg=dict(mode='slide', 
-                  crop_size=size,
-                  stride=[i//3 for i in size]),
 )
 
 
