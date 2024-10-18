@@ -36,7 +36,7 @@ lr = 1e-4
 batch_size = 4
 embed_dims = 16
 in_channels = 1
-num_classes = 5
+num_classes = 119
 size = (512,512)    # 单次前向处理的分辨率, 不限制推理
 use_checkpoint = False  # torch.checkpoint
 
