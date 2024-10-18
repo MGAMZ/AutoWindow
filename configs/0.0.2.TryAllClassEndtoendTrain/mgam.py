@@ -24,13 +24,13 @@ from mgamdata.dataset.Totalsegmentator.mm_dataset import TotalsegmentatorSegData
 # 环境
 debug    = False                            # 调试模式
 use_AMP  = True                             # AMP加速
-dist     = False if not debug else False     # 多卡训练总控
+dist     = False if not debug else False    # 多卡训练总控
 use_FSDP = False if not debug else False    # 多卡训练FSDP高级模式
 Compile  = True if not debug else False     # torch.dynamo
 workers  = 0 if debug else 4                # DataLoader Worker
 
 # Totalsegmentator Dataset
-subset = 'organ'
+subset = None
 num_classes = 119 if subset is None else len(CLASS_SUBSET_MAP[subset])
 val_sample_ratio = 0.1
 wl = 0      # window loacation
@@ -38,11 +38,11 @@ ww = 800    # window width
 
 # 神经网络超参
 lr = 1e-4
-batch_size = 2
-grad_accumulation = 2
-embed_dims = 32
+batch_size = 8
+grad_accumulation = 1
+embed_dims = 48
 in_channels = 1
-size = (512,512)    # 单次前向处理的分辨率, 不限制推理
+size = (256,256)    # 单次前向处理的分辨率, 不限制推理
 use_checkpoint = False  # torch.checkpoint
 
 # 流程控制
