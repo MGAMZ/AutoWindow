@@ -2,6 +2,12 @@ from mmengine.config import read_base
 with read_base():
     from .mgam import *
 
+from mmseg.models.segmentors import EncoderDecoder
+from mmseg.models.losses import DiceLoss
+
+from mgamdata.models.MedNeXt import MM_MedNext_Encoder, MM_MedNext_Decoder_Vallina
+
+
 # 神经网络设定
 model = dict(
     type = EncoderDecoder,

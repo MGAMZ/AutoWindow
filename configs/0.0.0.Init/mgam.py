@@ -11,12 +11,8 @@ from mmengine.optim import OptimWrapper, AmpOptimWrapper
 from mmengine.dataset.sampler import DefaultSampler, InfiniteSampler
 from mmseg.datasets.transforms import PackSegInputs, RandomRotate, RandomCrop, RandomFlip, Resize
 from mmseg.models.data_preprocessor import SegDataPreProcessor
-from mmseg.models.segmentors import EncoderDecoder
-from mmseg.models.losses import DiceLoss
 
-from mgamdata.dataset.Totalsegmentator.meta import DATA_ROOT
 from mgamdata.dataset.Totalsegmentator.mm_dataset import TotalsegmentatorSegDataset
-from mgamdata.models.MedNeXt import MM_MedNext_Encoder, MM_MedNext_Decoder_Vallina
 from mgamdata.mm.mmseg_PlugIn import IoUMetric_PerClass
 from mgamdata.mm.mmeng_PlugIn import RemasteredDDP, RemasteredFSDP
 from mgamdata.process.GeneralPreProcess import WindowSet, TypeConvert, RandomRoll
@@ -24,12 +20,12 @@ from mgamdata.process.LoadBiomedicalData import LoadImgFromOpenCV, LoadAnnoFromO
 
 
 # 环境
-debug    = True                         # 调试模式
-use_AMP  = True                         # AMP加速
+debug    = True                             # 调试模式
+use_AMP  = True                             # AMP加速
 dist     = True if not debug else False     # 多卡训练总控
 use_FSDP = False if not debug else False    # 多卡训练FSDP高级模式
 Compile  = True if not debug else False     # torch.dynamo
-workers  = 0 if debug else 4            # DataLoader Worker
+workers  = 0 if debug else 4                # DataLoader Worker
 
 # 窗宽位
 wl = 40     # 窗位 40-60     Optimum: 40
@@ -147,7 +143,6 @@ data_preprocessor = dict(
     type=SegDataPreProcessor,
     size=size,
 )
-
 
 # 训练策略
 train_cfg = dict(type=IterBasedTrainLoop,
