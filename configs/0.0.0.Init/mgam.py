@@ -22,7 +22,7 @@ from mgamdata.process.LoadBiomedicalData import LoadImgFromOpenCV, LoadAnnoFromO
 # 环境
 debug    = False                            # 调试模式
 use_AMP  = True                             # AMP加速
-dist     = True if not debug else False     # 多卡训练总控
+dist     = False if not debug else False     # 多卡训练总控
 use_FSDP = False if not debug else False    # 多卡训练FSDP高级模式
 Compile  = True if not debug else False     # torch.dynamo
 workers  = 0 if debug else 4                # DataLoader Worker
@@ -46,17 +46,17 @@ logger_interval = 200 if not debug else 1
 save_interval = 5000 if not debug else 2
 val_on_train = True
 val_interval = 1 if not debug else 2
-dynamic_intervals = None
-# dynamic_intervals = [   # 动态验证间隔
-#     (5, 5),
-#     (50, 10),
-#     (100, 25),
-#     (300, 100),
-#     (1000, 250),
-#     (3000, 500),
-#     (5000, 1000),
-#     (20000, 5000)
-# ]
+# dynamic_intervals = None
+dynamic_intervals = [   # 动态验证间隔
+    (5, 5),
+    (50, 10),
+    (100, 25),
+    (300, 100),
+    (1000, 250),
+    (3000, 500),
+    (5000, 1000),
+    (20000, 5000)
+]
 
 
 
