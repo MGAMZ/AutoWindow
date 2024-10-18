@@ -34,9 +34,9 @@ ww = 400    # 窗宽 300-400   Optimum: 400
 # 神经网络超参
 lr = 1e-4
 batch_size = 4
-embed_dims = 16
+embed_dims = 64
 in_channels = 1
-num_classes = 5
+num_classes = 119
 size = (512,512)    # 单次前向处理的分辨率, 不限制推理
 use_checkpoint = False  # torch.checkpoint
 

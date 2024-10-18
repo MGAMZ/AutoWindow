@@ -167,3 +167,4 @@ totalsegmentator_examples/*
 work_dirs
 test_dirs
 *.ipynb
+.dist_test
