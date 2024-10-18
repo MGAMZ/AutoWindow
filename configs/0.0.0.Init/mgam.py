@@ -20,9 +20,9 @@ from mgamdata.process.LoadBiomedicalData import LoadImgFromOpenCV, LoadAnnoFromO
 
 
 # 环境
-debug    = True                             # 调试模式
+debug    = False                             # 调试模式
 use_AMP  = True                             # AMP加速
-dist     = True if not debug else False     # 多卡训练总控
+dist     = False if not debug else False     # 多卡训练总控
 use_FSDP = False if not debug else False    # 多卡训练FSDP高级模式
 Compile  = True if not debug else False     # torch.dynamo
 workers  = 0 if debug else 4                # DataLoader Worker
@@ -42,7 +42,7 @@ use_checkpoint = False  # torch.checkpoint
 
 # 流程控制
 iters = 500000 if not debug else 3
-logger_interval = 500 if not debug else 1
+logger_interval = 200 if not debug else 1
 save_interval = 5000 if not debug else 2
 val_on_train = True
 val_interval = 1 if not debug else 2
@@ -130,7 +130,7 @@ test_dataloader = dict(
 # （不重要）构建评估器
 val_evaluator = test_evaluator = dict(
     type=IoUMetric_PerClass, 
-    ignore_index=None, 
+    ignore_index=255, 
     iou_metrics=['mIoU','mDice'], 
     prefix='Perf')
 if not val_on_train:
@@ -180,7 +180,7 @@ default_hooks.update(   # type: ignore
         rule='greater' if not debug else None,
         save_last=True if not debug else True),
     logger=dict(interval=logger_interval),
-    visualization=dict(interval=50 if not debug else 1))
+    visualization=dict(interval=1000 if not debug else 1))
 
 # torch.dynamo
 compile = dict(
