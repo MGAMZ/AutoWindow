@@ -1,27 +1,42 @@
 from mmengine.config import read_base
 with read_base():
-    from ..base import *
     from ..base_totalsegmentator_dataset import *
 
 from torch.optim.adamw import AdamW
 
+# mmengine
+from mmengine.runner import ValLoop
+from mmengine.runner import TestLoop
+from mmengine.hooks.iter_timer_hook import IterTimerHook
+from mmengine.hooks.param_scheduler_hook import ParamSchedulerHook
+from mmengine.hooks.checkpoint_hook import CheckpointHook
+from mmengine.hooks import DistSamplerSeedHook
 from mmengine.runner import IterBasedTrainLoop
 from mmengine.optim.scheduler import CosineAnnealingLR
 from mmengine._strategy import FSDPStrategy
 from mmengine.optim import OptimWrapper, AmpOptimWrapper
 from mmengine.dataset.sampler import DefaultSampler, InfiniteSampler
-from mmseg.datasets.transforms import PackSegInputs, RandomRotate, RandomCrop, RandomFlip, Resize
-from mmseg.models.data_preprocessor import SegDataPreProcessor
+from mmengine.visualization import LocalVisBackend
+from mmengine.visualization import TensorboardVisBackend
 
+# mmsegmentation
+from mmseg.visualization import SegLocalVisualizer
+from mmseg.engine.hooks import SegVisualizationHook
+from mmseg.datasets.transforms import RandomRotate, RandomFlip, Resize
+
+# customize
+from mgamdata.mm.mmeng_PlugIn import LoggerJSON
 from mgamdata.mm.mmseg_PlugIn import IoUMetric_PerClass
 from mgamdata.mm.mmeng_PlugIn import RemasteredDDP, RemasteredFSDP, RatioSampler
 from mgamdata.process.GeneralPreProcess import WindowSet, TypeConvert, RandomRoll
-from mgamdata.process.LoadBiomedicalData import LoadImgFromOpenCV, LoadAnnoFromOpenCV
-from mgamdata.dataset.Totalsegmentator.mm_dataset import TotalsegmentatorSegDataset
+from mgamdata.process.LoadBiomedicalData import LoadImageFromMHA, LoadMaskFromMHA
+from mgamdata.dataset.Totalsegmentator.mm_dataset import TotalsegmentatorSeg3DDataset
+from mgamdata.mm.mmseg_Dev3D import Seg3DDataPreProcessor, PackSeg3DInputs, Resize3D
 
 
 
-# 环境
+
+# --------------------PARAMETERS-------------------- #
 debug    = False                            # 调试模式
 use_AMP  = True                             # AMP加速
 dist     = False if not debug else False    # 多卡训练总控
@@ -73,25 +88,20 @@ dynamic_intervals = [   # 动态验证间隔
 
 # 数据读取与预处理管线
 train_pipeline = [
-    dict(type=LoadImgFromOpenCV),
-    dict(type=LoadAnnoFromOpenCV),
-    dict(type=Resize, scale=size),
-    dict(type=RandomRoll, 
-         direction=['horizontal', 'vertical'], gap=[i//3 for i in size],
-         erase=True, pad_val=-2000, seg_pad_val=0),
-    dict(type=RandomRotate, prob=1.0, degree=180, pad_val=-2000, seg_pad_val=0),
-    dict(type=RandomFlip, prob=[0.5, 0.5], direction=['horizontal', 'vertical']),
+    dict(type=LoadImageFromMHA),
+    dict(type=LoadMaskFromMHA),
+    dict(type=Resize3D, scale=size),
     dict(type=WindowSet, location=wl, width=ww),
     dict(type=TypeConvert),
-    dict(type=PackSegInputs)
+    dict(type=PackSeg3DInputs)
 ]
 val_pipeline = test_pipeline = [
-    dict(type=LoadImgFromOpenCV),
-    dict(type=Resize, scale=size),
+    dict(type=LoadImageFromMHA),
+    dict(type=Resize3D, scale=size),
     dict(type=WindowSet, location=wl, width=ww),
-    dict(type=LoadAnnoFromOpenCV),
+    dict(type=LoadMaskFromMHA),
     dict(type=TypeConvert),
-    dict(type=PackSegInputs)
+    dict(type=PackSeg3DInputs)
 ]
 
 # （不重要）构建dataloader
@@ -105,7 +115,7 @@ train_dataloader = dict(
         type=InfiniteSampler, 
         shuffle=False if debug else True),
     dataset=dict(
-        type=TotalsegmentatorSegDataset,
+        type=TotalsegmentatorSeg3DDataset,
         split='train',
         subset=subset,
         pipeline=train_pipeline,
@@ -122,7 +132,7 @@ val_dataloader = dict(
         shuffle=False, 
         use_sample_ratio=val_sample_ratio),
     dataset=dict(
-        type=TotalsegmentatorSegDataset,
+        type=TotalsegmentatorSeg3DDataset,
         split='val',
         subset=subset,
         pipeline=val_pipeline,
@@ -136,7 +146,7 @@ test_dataloader = dict(
     persistent_workers=True if workers > 0 else False,
     sampler=dict(type=DefaultSampler, shuffle=False),
     dataset=dict(
-        type=TotalsegmentatorSegDataset,
+        type=TotalsegmentatorSeg3DDataset,
         split='test',
         subset=subset,
         pipeline=test_pipeline,
@@ -150,14 +160,9 @@ val_evaluator = test_evaluator = dict(
     ignore_index=255, 
     iou_metrics=['mIoU','mDice'], 
     prefix='Perf')
-if not val_on_train:
-    val_dataloader = None
-    val_evaluator = None
-    val_cfg = None
 
-# （不重要）MM框架数据传输与规范化中间件
 data_preprocessor = dict(
-    type=SegDataPreProcessor,
+    type=Seg3DDataPreProcessor,
     size=size,
 )
 
@@ -166,6 +171,13 @@ train_cfg = dict(type=IterBasedTrainLoop,
                  max_iters=iters, 
                  val_interval=val_interval,
                  dynamic_intervals=dynamic_intervals,)
+val_cfg  = dict(type=ValLoop, fp16=True)
+test_cfg = dict(type=TestLoop)
+
+if not val_on_train:
+    val_dataloader = None
+    val_evaluator = None
+    val_cfg = None
 
 # 优化器
 optim_wrapper = dict(
@@ -182,15 +194,28 @@ optim_wrapper = dict(
 # 学习率调整策略
 param_scheduler = []
 
-# （不重要）Hooks
-default_hooks.update(   # type: ignore
+
+default_hooks = dict(
+    timer=dict(type=IterTimerHook),
+    logger=dict(
+        type=LoggerJSON,
+        interval=logger_interval,
+        log_metric_by_epoch=False), 
+    param_scheduler=dict(type=ParamSchedulerHook),
     checkpoint=dict(
+        type=CheckpointHook, 
+        by_epoch=False, 
+        max_keep_ckpts=1,
         interval=save_interval,
         save_best='Perf/mDice' if not debug else None,
         rule='greater' if not debug else None,
         save_last=True if not debug else True),
-    logger=dict(interval=logger_interval),
-    visualization=dict(interval=100 if not debug else 1))
+    sampler_seed=dict(type=DistSamplerSeedHook),
+    visualization=dict(
+        type=SegVisualizationHook, 
+        draw=True,
+        interval=100 if not debug else 1),
+)
 
 # torch.dynamo
 compile = dict(
@@ -200,6 +225,7 @@ compile = dict(
 )
 
 # 分布式训练
+runner_type = 'mgam_Runner'
 if dist:
     launcher = 'pytorch'
     if use_FSDP:
@@ -212,5 +238,32 @@ if dist:
 else:
     launcher = 'none'
 
-# 断点续训
+# 运行环境
+env_cfg = dict(
+    # 子进程中使用CUDA的话必须使用spawn, 需要保证所有参数可pickle
+    # 一般情况下可以使用fork, 可以共享内存空间
+    mp_cfg=dict(mp_start_method='fork', opencv_num_threads=0), 
+    dist_cfg=dict(backend='nccl'),
+    allow_tf32=True,
+    benchmark=True,
+    allow_fp16_reduced_precision_reduction=True,
+    allow_bf16_reduced_precision_reduction=True,
+    dynamo_cache_size=2,
+    dynamo_supress_errors=False,
+    dynamo_logging_level='ERROR',
+    torch_logging_level='ERROR',
+)
+
+vis_backends = [dict(type=LocalVisBackend), 
+                dict(type=TensorboardVisBackend)]
+visualizer = dict(
+    type=SegLocalVisualizer, 
+    vis_backends=vis_backends, 
+    name='visualizer',
+    alpha=0.2)
+log_processor = dict(by_epoch=False)
+log_level = 'INFO'
+load_from = None
+resume = False
+tta_model = None
 resume=True
