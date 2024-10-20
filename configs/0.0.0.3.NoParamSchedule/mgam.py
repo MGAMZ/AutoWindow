@@ -178,15 +178,7 @@ optim_wrapper = dict(
 )
 
 # 学习率调整策略
-param_scheduler = [
-    dict(
-        type=CosineAnnealingLR,
-        T_max=iters,
-        eta_min_ratio=0.05,
-        by_epoch=False,
-        begin=0,
-        end=iters*0.9)
-]
+param_scheduler = []
 
 # （不重要）Hooks
 default_hooks.update(   # type: ignore
