@@ -22,7 +22,6 @@ from mmengine.visualization import TensorboardVisBackend
 # mmsegmentation
 from mmseg.visualization import SegLocalVisualizer
 from mmseg.engine.hooks import SegVisualizationHook
-from mmseg.datasets.transforms import RandomRotate, RandomFlip, Resize
 
 # customize
 from mgamdata.mm.mmeng_PlugIn import LoggerJSON
@@ -31,7 +30,8 @@ from mgamdata.mm.mmeng_PlugIn import RemasteredDDP, RemasteredFSDP, RatioSampler
 from mgamdata.process.GeneralPreProcess import WindowSet, TypeConvert, RandomRoll
 from mgamdata.process.LoadBiomedicalData import LoadImageFromMHA, LoadMaskFromMHA
 from mgamdata.dataset.Totalsegmentator.mm_dataset import TotalsegmentatorSeg3DDataset
-from mgamdata.mm.mmseg_Dev3D import Seg3DDataPreProcessor, PackSeg3DInputs, Resize3D
+from mgamdata.mm.mmseg_Dev3D import (
+    Seg3DDataPreProcessor, PackSeg3DInputs, Resize3D, RandomCrop3D)
 
 
 
@@ -50,21 +50,23 @@ num_classes = 119 if subset is None else len(CLASS_SUBSET_MAP[subset])
 val_sample_ratio = 0.1
 wl = 0      # window loacation
 ww = 800    # window width
+pad_val = -2000
+seg_pad_val = 0
 
 # 神经网络超参
-lr = 1e-4
-batch_size = 8
-grad_accumulation = 1
-embed_dims = 48
+lr = 5e-4
+batch_size = 2
+grad_accumulation = 4
+embed_dims = 32
 in_channels = 1
-size = (256,256)    # 单次前向处理的分辨率, 不限制推理
-use_checkpoint = False  # torch.checkpoint
+size = (64,96,96)    # 单次前向处理的分辨率, 不限制推理
+use_checkpoint = True  # torch.checkpoint
 
 # 流程控制
 iters = 500000 if not debug else 3
 logger_interval = 50 if not debug else 1
 save_interval = 5000 if not debug else 2
-val_on_train = True
+val_on_train = False
 val_interval = 1 if not debug else 2
 dynamic_intervals = None
 dynamic_intervals = [   # 动态验证间隔
@@ -90,14 +92,14 @@ dynamic_intervals = [   # 动态验证间隔
 train_pipeline = [
     dict(type=LoadImageFromMHA),
     dict(type=LoadMaskFromMHA),
-    dict(type=Resize3D, scale=size),
+    dict(type=RandomCrop3D, crop_size=size),
     dict(type=WindowSet, location=wl, width=ww),
     dict(type=TypeConvert),
     dict(type=PackSeg3DInputs)
 ]
+
 val_pipeline = test_pipeline = [
     dict(type=LoadImageFromMHA),
-    dict(type=Resize3D, scale=size),
     dict(type=WindowSet, location=wl, width=ww),
     dict(type=LoadMaskFromMHA),
     dict(type=TypeConvert),
@@ -164,6 +166,8 @@ val_evaluator = test_evaluator = dict(
 data_preprocessor = dict(
     type=Seg3DDataPreProcessor,
     size=size,
+    pad_val=pad_val,
+    seg_pad_val=seg_pad_val,
 )
 
 # 训练策略
@@ -213,7 +217,7 @@ default_hooks = dict(
     sampler_seed=dict(type=DistSamplerSeedHook),
     visualization=dict(
         type=SegVisualizationHook, 
-        draw=True,
+        draw=False,
         interval=100 if not debug else 1),
 )
 

@@ -13,16 +13,14 @@ model = dict(
         in_channels=in_channels,
         embed_dims=embed_dims,
         dim="3d",
+        use_checkpoint=use_checkpoint,
     ),
     decode_head = dict(
         type=MM_MedNext_Decoder_3D,
         embed_dims=embed_dims,
         num_classes=num_classes,
         out_channels=num_classes,
-        threshold=0.3,
-        norm_cfg=None,
-        align_corners=False,
-        ignore_index=255,
+        use_checkpoint=use_checkpoint,
         loss_decode=dict(
             type=DiceLoss_3D, 
             use_sigmoid=False,
@@ -31,5 +29,6 @@ model = dict(
     test_cfg=dict(
         mode='slide',
         crop_size=size,
-        stride=[i//2 for i in size]),
+        stride=size,
+        slide_accumulate_device='cpu'),
 )
