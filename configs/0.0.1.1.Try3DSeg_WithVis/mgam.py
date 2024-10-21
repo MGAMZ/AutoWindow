@@ -39,13 +39,13 @@ debug    = False                            # 调试模式
 use_AMP  = True                             # AMP加速
 dist     = False if not debug else False    # 多卡训练总控
 use_FSDP = False if not debug else False    # 多卡训练FSDP高级模式
-Compile  = True if not debug else False     # torch.dynamo
+Compile  = False if not debug else False     # torch.dynamo
 workers  = 0 if debug else 4                # DataLoader Worker
 
 # Totalsegmentator Dataset
 subset = 'organ'
 num_classes = 119 if subset is None else len(CLASS_SUBSET_MAP[subset])
-val_sample_ratio = 0.1
+val_sample_ratio = 1.0
 wl = 193    # window loacation
 ww = 400    # window width
 pad_val = -1024
@@ -223,8 +223,7 @@ default_hooks = dict(
     sampler_seed=dict(type=DistSamplerSeedHook),
     visualization=dict(
         type=Seg3DVisualizationHook, 
-        draw=True,
-        interval=100 if not debug else 1),
+        draw=True, interval=100),
 )
 
 # torch.dynamo
@@ -270,7 +269,8 @@ visualizer = dict(
     type=Seg3DLocalVisualizer, 
     vis_backends=vis_backends, 
     name='visualizer',
-    alpha=0.2)
+    alpha=0.2,
+    resize=(512,512))
 log_processor = dict(by_epoch=False)
 log_level = 'INFO'
 load_from = None
