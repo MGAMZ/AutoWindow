@@ -130,7 +130,7 @@ train_dataloader = dict(
     ),
 )
 val_dataloader = dict(
-    batch_size=batch_size,
+    batch_size=1,
     num_workers=workers//2,
     pin_memory=False,
     persistent_workers=True if workers > 0 else False,
@@ -147,7 +147,7 @@ val_dataloader = dict(
     ),
 )
 test_dataloader = dict(
-    batch_size=batch_size,
+    batch_size=1,
     num_workers=workers//2,
     pin_memory=False,
     persistent_workers=True if workers > 0 else False,
