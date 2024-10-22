@@ -23,11 +23,11 @@ from mmengine.visualization import TensorboardVisBackend
 from mgamdata.mm.mmeng_PlugIn import LoggerJSON
 from mgamdata.mm.mmseg_PlugIn import IoUMetric_PerClass
 from mgamdata.mm.mmeng_PlugIn import RemasteredDDP, RemasteredFSDP, RatioSampler
-from mgamdata.process.GeneralPreProcess import WindowSet, TypeConvert, RandomRoll
+from mgamdata.process.GeneralPreProcess import WindowSet, TypeConvert, InstanceNorm
 from mgamdata.process.LoadBiomedicalData import LoadImageFromMHA, LoadMaskFromMHA
 from mgamdata.dataset.Totalsegmentator.mm_dataset import TotalsegmentatorSeg3DDataset, ParseID
 from mgamdata.mm.mmseg_Dev3D import (
-    PackSeg3DInputs, Resize3D, RandomCrop3D, 
+    PackSeg3DInputs, Resize3D, RandomCrop3D,
     Seg3DDataPreProcessor, Seg3DLocalVisualizer, Seg3DVisualizationHook,
 )
 
@@ -43,21 +43,22 @@ Compile  = True if not debug else False     # torch.dynamo
 workers  = 0 if debug else 4                # DataLoader Worker
 
 # Totalsegmentator Dataset
-subset = None
+data_root = '/home/zhangyq.sx/Totalsegmentator_Data/Totalsegmentator_dataset_v201/spacing_1_mha'
+subset = 'organ' # ['organ', None]
 num_classes = 119 if subset is None else len(CLASS_SUBSET_MAP[subset])
 val_sample_ratio = 0.1
 wl = 193    # window loacation
-ww = 400    # window width
+ww = 800    # window width
 pad_val = -2000
 seg_pad_val = 0
 
 # 神经网络超参
 lr = 5e-4
-batch_size = 2 if not debug else 2
-grad_accumulation = 1
-embed_dims = 64
+batch_size = 1 if not debug else 2
+grad_accumulation = 2
+embed_dims = 32
 in_channels = 1
-size = (64,96,96)       # 单次前向处理的分辨率, 不限制推理
+size = (128,128,128)       # 单次前向处理的分辨率, 不限制推理
 use_checkpoint = False  # torch.checkpoint
 
 # 流程控制
@@ -98,6 +99,7 @@ train_pipeline = [
     dict(type=LoadMaskFromMHA),
     dict(type=RandomCrop3D, crop_size=size),
     dict(type=WindowSet, location=wl, width=ww),
+    dict(type=InstanceNorm),
     dict(type=TypeConvert),
     dict(type=PackSeg3DInputs, meta_keys=meta_keys)
 ]
@@ -106,6 +108,7 @@ val_pipeline = test_pipeline = [
     dict(type=LoadImageFromMHA),
     dict(type=ParseID),
     dict(type=WindowSet, location=wl, width=ww),
+    dict(type=InstanceNorm),
     dict(type=LoadMaskFromMHA),
     dict(type=TypeConvert),
     dict(type=PackSeg3DInputs, meta_keys=meta_keys)
@@ -124,6 +127,7 @@ train_dataloader = dict(
     dataset=dict(
         type=TotalsegmentatorSeg3DDataset,
         split='train',
+        data_root=data_root,
         subset=subset,
         pipeline=train_pipeline,
         debug=debug,
@@ -141,6 +145,7 @@ val_dataloader = dict(
     dataset=dict(
         type=TotalsegmentatorSeg3DDataset,
         split='val',
+        data_root=data_root,
         subset=subset,
         pipeline=val_pipeline,
         debug=debug,
@@ -155,6 +160,7 @@ test_dataloader = dict(
     dataset=dict(
         type=TotalsegmentatorSeg3DDataset,
         split='test',
+        data_root=data_root,
         subset=subset,
         pipeline=test_pipeline,
         debug=debug,
@@ -223,7 +229,7 @@ default_hooks = dict(
     sampler_seed=dict(type=DistSamplerSeedHook),
     visualization=dict(
         type=Seg3DVisualizationHook, 
-        draw=True,
+        draw=True, 
         interval=100 if not debug else 1),
 )
 
@@ -270,7 +276,8 @@ visualizer = dict(
     type=Seg3DLocalVisualizer, 
     vis_backends=vis_backends, 
     name='visualizer',
-    alpha=0.2)
+    alpha=0.2,
+    resize=(512,512))
 log_processor = dict(by_epoch=False)
 log_level = 'INFO'
 load_from = None
