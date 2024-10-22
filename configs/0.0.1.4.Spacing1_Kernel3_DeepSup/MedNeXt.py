@@ -24,10 +24,11 @@ model = dict(
         out_channels=num_classes,
         use_checkpoint=use_checkpoint,
         deep_supervision=deep_supervision,
+        ignore_index=0, # 仅对train acc计算有效
         loss_decode=dict(
             type=DiceLoss_3D,
             use_sigmoid=False,
-            ignore_index=255),
+            ignore_index=0),
     ),
     test_cfg=dict(
         mode='slide',

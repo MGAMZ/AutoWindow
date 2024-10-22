@@ -35,7 +35,7 @@ from mgamdata.mm.mmseg_Dev3D import (
 
 
 # --------------------PARAMETERS-------------------- #
-debug    = True                            # 调试模式
+debug    = False                            # 调试模式
 use_AMP  = True                             # AMP加速
 dist     = False if not debug else False    # 多卡训练总控
 use_FSDP = False if not debug else False    # 多卡训练FSDP高级模式
@@ -43,7 +43,7 @@ Compile  = True if not debug else False     # torch.dynamo
 workers  = 4 if not debug else 0            # DataLoader Worker
 
 # Totalsegmentator Dataset
-data_root = '/file1/Totalsegmentator_dataset_v201/original_mha/'
+data_root = '/file1/Totalsegmentator_dataset_v201/spacing_1_mha/'
 subset = 'organ' # ['organ', None]
 num_classes = 119 if subset is None else len(CLASS_SUBSET_MAP[subset])
 val_sample_ratio = 0.1
@@ -98,7 +98,9 @@ train_pipeline = [
     dict(type=LoadImageFromMHA),
     dict(type=ParseID),
     dict(type=LoadMaskFromMHA),
-    dict(type=RandomCrop3D, crop_size=size),
+    dict(type=RandomCrop3D, 
+         crop_size=size,
+         cat_max_ratio=0.8),
     dict(type=WindowSet, location=wl, width=ww),
     dict(type=InstanceNorm),
     dict(type=TypeConvert),
