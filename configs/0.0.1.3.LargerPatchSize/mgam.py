@@ -43,6 +43,7 @@ Compile  = True if not debug else False     # torch.dynamo
 workers  = 4 if not debug else 0            # DataLoader Worker
 
 # Totalsegmentator Dataset
+data_root = '/file1/Totalsegmentator_dataset_v201/spacing_1_mha/'
 subset = 'organ' # ['organ', None]
 num_classes = 119 if subset is None else len(CLASS_SUBSET_MAP[subset])
 val_sample_ratio = 0.1
@@ -52,12 +53,12 @@ pad_val = -2000
 seg_pad_val = 0
 
 # 神经网络超参
-lr = 5e-4
-batch_size = 2 if not debug else 2
-grad_accumulation = 4
-embed_dims = 32
+lr = 2e-4
+batch_size = 1 if not debug else 2
+grad_accumulation = 4 if not debug else 2
+embed_dims = 32 if not debug else 8
 in_channels = 1
-size = (64,96,96)       # 单次前向处理的分辨率, 不限制推理
+size = (96,96,96)       # 单次前向处理的分辨率, 不限制推理
 use_checkpoint = False  # torch.checkpoint
 
 # 流程控制
@@ -67,7 +68,7 @@ save_interval = 5000 if not debug else 2
 val_on_train = True
 val_interval = 2000 if not debug else 2
 dynamic_intervals = None
-# dynamic_intervals = [   # 动态验证间隔
+# dynamic_intervals = [ # 动态验证间隔
 #     (5, 5),
 #     (50, 10),
 #     (100, 25),
@@ -126,6 +127,7 @@ train_dataloader = dict(
     dataset=dict(
         type=TotalsegmentatorSeg3DDataset,
         split='train',
+        data_root=data_root,
         subset=subset,
         pipeline=train_pipeline,
         debug=debug,
@@ -143,6 +145,7 @@ val_dataloader = dict(
     dataset=dict(
         type=TotalsegmentatorSeg3DDataset,
         split='val',
+        data_root=data_root,
         subset=subset,
         pipeline=val_pipeline,
         debug=debug,
@@ -157,6 +160,7 @@ test_dataloader = dict(
     dataset=dict(
         type=TotalsegmentatorSeg3DDataset,
         split='test',
+        data_root=data_root,
         subset=subset,
         pipeline=test_pipeline,
         debug=debug,
