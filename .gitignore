@@ -168,3 +168,6 @@ work_dirs
 test_dirs
 *.ipynb
 .dist_test
+*.jpg
+*.png
+*.jpeg
