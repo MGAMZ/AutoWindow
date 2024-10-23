@@ -44,7 +44,7 @@ Compile  = True if not debug else False     # torch.dynamo
 workers  = 4 if not debug else 0            # DataLoader Worker
 
 # Totalsegmentator Dataset
-pre_crop_data_root = '/file1/Totalsegmentator_dataset_v201/spacing_1_crop80_npz/'
+pre_crop_data_root = '/file1/Totalsegmentator_dataset_v201/spacing_1_crop80_ccm0.5_npz/'
 mha_data_root = '/file1/Totalsegmentator_dataset_v201/spacing_1_mha/'
 subset = 'organ' # ['organ', None]
 num_classes = 119 if subset is None else len(CLASS_SUBSET_MAP[subset])
@@ -121,7 +121,7 @@ train_dataloader = dict(
     batch_size=batch_size,
     num_workers=workers,
     drop_last=False if debug else True,
-    pin_memory=False,
+    pin_memory=True,
     persistent_workers=True if workers > 0 else False,
     sampler=dict(
         type=InfiniteSampler, 
@@ -141,7 +141,7 @@ val_dataloader = dict(
     pin_memory=False,
     persistent_workers=True if workers > 0 else False,
     sampler=dict(
-        type=RatioSampler, 
+        type=RatioSampler,
         shuffle=False, 
         use_sample_ratio=val_sample_ratio),
     dataset=dict(
