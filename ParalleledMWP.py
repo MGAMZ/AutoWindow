@@ -1,6 +1,4 @@
-
-from functools import partial
-from typing import Sequence
+from collections.abc import Sequence
 
 import torch
 from torch import Tensor
@@ -13,7 +11,9 @@ from mgamdata.mm.mmseg_Dev3D import EncoderDecoder_3D
 
 
 
-class PMWP_projection(torch.nn.Module):
+class value_wise_projector(torch.nn.Module):
+    """Value-Wise Projector for one window remapping operation."""
+    
     def __init__(self, 
                  in_channels:int, 
                  nbins:int, 
@@ -37,10 +37,33 @@ class PMWP_projection(torch.nn.Module):
                 track_running_stats=True)
         
         self.projection_map = torch.nn.Parameter(
-            torch.linspace( # type: ignore
+            torch.linspace(
                 start=remap_range[0],
                 end=remap_range[1],
                 step=nbins))
+    
+    
+    def regulation(self):
+        """
+        Limit the projector ability to ensure it's behavior,
+        which aligns with the physical meaning.
+        """
+        
+        # Ascending projected value along the index.
+        index = torch.arange(len(self.projection_map)).float()
+        target_map = index / \
+                     (len(self.projection_map) - 1) * \
+                     (self.projection_map[-1] - self.projection_map[0]) + \
+                     self.projection_map[0]
+        ascend_loss = torch.sum((self.projection_map - target_map) ** 2)
+        
+        # More smoothness around the center.
+        diff = torch.diff(self.projection_map)
+        center = len(self.projection_map) // 2
+        smoothness_loss = torch.sum(diff[:center] ** 2) + \
+                          torch.sum(diff[center:] ** 2)
+        
+        return ascend_loss + smoothness_loss
     
     
     def forward(self, inputs:Tensor):
@@ -63,7 +86,9 @@ class PMWP_projection(torch.nn.Module):
 
 
 
-class PMWP_Warpper(BaseModule):
+class PMWP(BaseModule):
+    """The top module of Paralleled Multi-Window Processing."""
+    
     def __init__(self,
                  backbone:dict|EncoderDecoder_3D,
                  in_channels:int,
@@ -104,7 +129,7 @@ class PMWP_Warpper(BaseModule):
     def _init_PMWP(self):
         for i in range(self.num_windows):
             setattr(self, f"pmwp_window_{i}", 
-                    PMWP_projection(
+                    value_wise_projector(
                         in_channels=self.in_channels,
                         nbins=self.num_bins,
                         remap_range=self.remap_range,
@@ -141,12 +166,19 @@ class PMWP_Warpper(BaseModule):
             ori_shape[0], ori_shape[1]*ori_shape[2], *ori_shape[3:])
         
         return window_concat_on_channel # [N, Win*C, ...]
-    
-    
+
+
     def forward(self, inputs:Tensor):
         """
+        Act as a pre-embedding layer.
+        The input tensor's second dimension is preprocessed, 
+        (Win, C) is reshaped to (Win*C).
+        
         Args:
             inputs (Tensor): (N, Win*C, ...)
+        
+        Returns:
+            Tensor: (N, Win*C, ...)
         """
         assert inputs.size(1) == self.num_windows * self.in_channels
         
@@ -157,5 +189,3 @@ class PMWP_Warpper(BaseModule):
         whole_out = self.checkpoint(self.backbone, pmwp_out)
         
         return whole_out # [N, Win*C, ...]
-        
-        
