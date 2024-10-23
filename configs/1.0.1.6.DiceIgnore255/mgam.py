@@ -38,14 +38,14 @@ from mgamdata.mm.mmseg_Dev3D import (
 # --------------------PARAMETERS-------------------- #
 debug    = False                            # 调试模式
 use_AMP  = True                             # AMP加速
-dist     = False if not debug else False    # 多卡训练总控
+dist     = True if not debug else False     # 多卡训练总控
 use_FSDP = False if not debug else False    # 多卡训练FSDP高级模式
 Compile  = True if not debug else False     # torch.dynamo
 workers  = 4 if not debug else 0            # DataLoader Worker
 
 # Totalsegmentator Dataset
-pre_crop_data_root = '/file1/Totalsegmentator_dataset_v201/spacing_1_crop80_npz/'
-mha_data_root = '/file1/Totalsegmentator_dataset_v201/spacing_1_mha/'
+pre_crop_data_root = '/home/zhangyq.sx/Totalsegmentator_Data/Totalsegmentator_dataset_v201/spacing_1_crop_128_npz'
+mha_data_root = '/home/zhangyq.sx/Totalsegmentator_Data/Totalsegmentator_dataset_v201/spacing_1_mha'
 subset = 'organ' # ['organ', None]
 num_classes = 119 if subset is None else len(CLASS_SUBSET_MAP[subset])
 val_sample_ratio = 0.1
@@ -56,17 +56,17 @@ seg_pad_val = 0
 
 # 神经网络超参
 lr = 1e-4
-batch_size = 2 if not debug else 2
-grad_accumulation = 4 if not debug else 2
+batch_size = 1 if not debug else 2
+grad_accumulation = 1 if not debug else 2
 embed_dims = 32 if not debug else 8
 in_channels = 1
-size = (80,80,80)       # 单次前向处理的分辨率, 不限制推理
+size = (128,128,128)       # 单次前向处理的分辨率, 不限制推理
 deep_supervision = True
 use_checkpoint = False  # torch.checkpoint
 
 # 流程控制
-iters = 1000000 if not debug else 3
-logger_interval = 500 if not debug else 1
+iters = 500000 if not debug else 3
+logger_interval = 200 if not debug else 1
 save_interval = 5000 if not debug else 2
 val_on_train = True
 val_interval = 2000 if not debug else 2
@@ -115,7 +115,6 @@ val_pipeline = test_pipeline = [
     dict(type=TypeConvert),
     dict(type=PackSeg3DInputs, meta_keys=meta_keys)
 ]
-
 
 train_dataloader = dict(
     batch_size=batch_size,
