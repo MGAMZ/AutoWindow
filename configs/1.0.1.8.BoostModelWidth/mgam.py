@@ -44,7 +44,7 @@ Compile  = True if not debug else False     # torch.dynamo
 workers  = 4 if not debug else 0            # DataLoader Worker
 
 # Totalsegmentator Dataset
-pre_crop_data_root = '/home/zhangyq.sx/Totalsegmentator_Data/Totalsegmentator_dataset_v201/spacing_1_crop_128_npz'
+pre_crop_data_root = '/home/zhangyq.sx/Totalsegmentator_Data/Totalsegmentator_dataset_v201/spacing_1_crop128_ccm0.5_npz/'
 mha_data_root = '/home/zhangyq.sx/Totalsegmentator_Data/Totalsegmentator_dataset_v201/spacing_1_mha'
 subset = 'organ' # ['organ', None]
 num_classes = 119 if subset is None else len(CLASS_SUBSET_MAP[subset])
@@ -57,7 +57,7 @@ seg_pad_val = 0
 # 神经网络超参
 lr = 1e-4
 batch_size = 1 if not debug else 2
-grad_accumulation = 1 if not debug else 2
+grad_accumulation = 2 if not debug else 2
 embed_dims = 48 if not debug else 8
 in_channels = 1
 size = (128,128,128)        # 单次前向处理的分辨率, 不限制推理
