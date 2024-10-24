@@ -90,7 +90,6 @@ class PMWP(BaseModule):
     """The top module of Paralleled Multi-Window Processing."""
     
     def __init__(self,
-                 backbone:dict|EncoderDecoder_3D,
                  in_channels:int,
                  embed_dims:int,
                  window_embed_dims:int=32,
@@ -102,14 +101,6 @@ class PMWP(BaseModule):
                 ):
         assert dim.lower() in ['2d', '3d']
         super().__init__()
-        if isinstance(backbone, dict):
-            backbone['in_channels'] = num_windows * window_embed_dims
-            self.backbone = MODELS.build(backbone)
-        elif isinstance(backbone, EncoderDecoder_3D):
-            self.backbone = backbone
-        else:
-            raise ValueError(f"backbone should be dict or EncoderDecoder_3D,"
-                             f"got {type(backbone)}")
         if use_checkpoint:
             self.checkpoint = lambda f,x: checkpoint(f, x, use_reentrant=False)
         else:
@@ -168,24 +159,11 @@ class PMWP(BaseModule):
         return window_concat_on_channel # [N, Win*C, ...]
 
 
-    def forward(self, inputs:Tensor):
-        """
-        Act as a pre-embedding layer.
-        The input tensor's second dimension is preprocessed, 
-        (Win, C) is reshaped to (Win*C).
-        
-        Args:
-            inputs (Tensor): (N, Win*C, ...)
-        
-        Returns:
-            Tensor: (N, Win*C, ...)
-        """
-        assert inputs.size(1) == self.num_windows * self.in_channels
-        
-        windows = inputs.chunk(self.num_windows, dim=1)
-        # list[N, C, ...], length: num_windows (W or Win)
-        pmwp_out = self.checkpoint(self.forward_PMWP, windows)
-        # [N, Win*C, ...]
-        whole_out = self.checkpoint(self.backbone, pmwp_out)
-        
-        return whole_out # [N, Win*C, ...]
+class PMWP_Warpper(EncoderDecoder_3D):
+    def extract_feat(self, inputs:Tensor):
+        # inputs: [N, C, ...]
+        pmwp_out = self.checkpoint(self.forward_PMWP, inputs)
+        x = self.checkpoint(self.backbone, pmwp_out)
+        if self.with_neck:
+            x = self.checkpoint(self.neck, x)
+        return x
