@@ -1,0 +1,1 @@
+/home/zhangyq.sx/mgam_repos/mgam_datatoolkit/mgamdata/models/AutoWindow.py

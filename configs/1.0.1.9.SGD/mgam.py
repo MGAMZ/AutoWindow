@@ -3,6 +3,7 @@ with read_base():
     from ..base_totalsegmentator_dataset import *
 
 from torch.optim.adamw import AdamW
+from torch.optim.sgd import SGD
 
 # mmengine
 from mmengine.runner import ValLoop
@@ -55,7 +56,7 @@ pad_val = -2000
 seg_pad_val = 0
 
 # 神经网络超参
-lr = 1e-4
+lr = 1e-2
 batch_size = 1 if not debug else 2
 grad_accumulation = 2 if not debug else 2
 embed_dims = 48 if not debug else 8
@@ -200,9 +201,11 @@ if not val_on_train:
 optim_wrapper = dict(
     type=AmpOptimWrapper if use_AMP else OptimWrapper,
     accumulative_counts=grad_accumulation,
-    optimizer=dict(type=AdamW,
+    optimizer=dict(type=SGD,
                    lr=lr,
-                   weight_decay=1e-2),
+                   weight_decay=2e-5,
+                   momentum=0.99,
+                   nesterov=True),
     clip_grad=dict(max_norm=1,
                    norm_type=2,
                    error_if_nonfinite=False)

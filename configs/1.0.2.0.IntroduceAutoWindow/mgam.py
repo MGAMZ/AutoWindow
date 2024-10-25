@@ -3,6 +3,7 @@ with read_base():
     from ..base_totalsegmentator_dataset import *
 
 from torch.optim.adamw import AdamW
+from torch.optim.sgd import SGD
 
 # mmengine
 from mmengine.runner import ValLoop
@@ -38,9 +39,9 @@ from mgamdata.mm.mmseg_Dev3D import (
 # --------------------PARAMETERS-------------------- #
 debug    = False                            # 调试模式
 use_AMP  = True                             # AMP加速
-dist     = True if not debug else False     # 多卡训练总控
+dist     = False if not debug else False     # 多卡训练总控
 use_FSDP = False if not debug else False    # 多卡训练FSDP高级模式
-Compile  = True if not debug else False     # torch.dynamo
+Compile  = False if not debug else False     # torch.dynamo
 workers  = 4 if not debug else 0            # DataLoader Worker
 
 # Totalsegmentator Dataset
@@ -55,11 +56,12 @@ pad_val = -2000
 seg_pad_val = 0
 
 # 神经网络超参
-lr = 1e-4
+lr = 1e-2
 batch_size = 1 if not debug else 2
 grad_accumulation = 2 if not debug else 2
 embed_dims = 48 if not debug else 8
 in_channels = 1
+num_parallel_windows = 4
 size = (128,128,128)        # 单次前向处理的分辨率, 不限制推理
 deep_supervision = True
 use_checkpoint = False      # torch.checkpoint
@@ -100,8 +102,8 @@ train_pipeline = [
     dict(type=LoadSampleFromNpz, load_type=['img']),
     dict(type=ParseID),
     dict(type=LoadSampleFromNpz, load_type=['anno']),
-    dict(type=WindowSet, location=wl, width=ww),
-    dict(type=InstanceNorm),
+    # dict(type=WindowSet, location=wl, width=ww),
+    # dict(type=InstanceNorm),
     dict(type=TypeConvert),
     dict(type=PackSeg3DInputs, meta_keys=meta_keys)
 ]
@@ -109,8 +111,8 @@ train_pipeline = [
 val_pipeline = test_pipeline = [
     dict(type=LoadImageFromMHA),
     dict(type=ParseID),
-    dict(type=WindowSet, location=wl, width=ww),
-    dict(type=InstanceNorm),
+    # dict(type=WindowSet, location=wl, width=ww),
+    # dict(type=InstanceNorm),
     dict(type=LoadMaskFromMHA),
     dict(type=TypeConvert),
     dict(type=PackSeg3DInputs, meta_keys=meta_keys)
@@ -200,12 +202,18 @@ if not val_on_train:
 optim_wrapper = dict(
     type=AmpOptimWrapper if use_AMP else OptimWrapper,
     accumulative_counts=grad_accumulation,
-    optimizer=dict(type=AdamW,
+    optimizer=dict(type=SGD,
                    lr=lr,
-                   weight_decay=1e-2),
+                   weight_decay=2e-5,
+                   momentum=0.99,
+                   nesterov=True),
     clip_grad=dict(max_norm=1,
                    norm_type=2,
-                   error_if_nonfinite=False)
+                   error_if_nonfinite=False),
+    paramwise_cfg=dict(
+        custom_keys=dict(
+            pmwp=dict(
+                decay_mult=0))),
 )
 
 # 学习率调整策略
