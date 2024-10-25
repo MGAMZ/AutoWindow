@@ -15,6 +15,7 @@ model = dict(
         embed_dims=embed_dims,
         num_windows=num_parallel_windows,
         proj_order=4,
+        data_range=[-1024, 3072],
     ),
     backbone = dict(
         type=MM_MedNext_Encoder,

@@ -102,8 +102,8 @@ train_pipeline = [
     dict(type=LoadSampleFromNpz, load_type=['img']),
     dict(type=ParseID),
     dict(type=LoadSampleFromNpz, load_type=['anno']),
-    dict(type=WindowSet, location=wl, width=ww),
-    dict(type=InstanceNorm),
+    # dict(type=WindowSet, location=wl, width=ww),
+    # dict(type=InstanceNorm),
     dict(type=TypeConvert),
     dict(type=PackSeg3DInputs, meta_keys=meta_keys)
 ]
@@ -111,8 +111,8 @@ train_pipeline = [
 val_pipeline = test_pipeline = [
     dict(type=LoadImageFromMHA),
     dict(type=ParseID),
-    dict(type=WindowSet, location=wl, width=ww),
-    dict(type=InstanceNorm),
+    # dict(type=WindowSet, location=wl, width=ww),
+    # dict(type=InstanceNorm),
     dict(type=LoadMaskFromMHA),
     dict(type=TypeConvert),
     dict(type=PackSeg3DInputs, meta_keys=meta_keys)
