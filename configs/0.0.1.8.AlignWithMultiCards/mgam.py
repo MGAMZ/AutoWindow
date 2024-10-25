@@ -46,8 +46,8 @@ workers  = 4 if not debug else 0            # DataLoader Worker
 # Totalsegmentator Dataset
 pre_crop_data_root = '/file1/Totalsegmentator_dataset_v201/spacing_1_crop80_ccm0.5_npz/'
 mha_data_root = '/file1/Totalsegmentator_dataset_v201/spacing_1_mha/'
-subset = 'organ' # ['organ', None]
-num_classes = 119 if subset is None else len(CLASS_SUBSET_MAP[subset])
+subset = 'all' # ['all', 'organ']
+num_classes = LENGTH_SUBSET[subset]
 val_sample_ratio = 0.1
 wl = 193    # window loacation
 ww = 800    # window width
