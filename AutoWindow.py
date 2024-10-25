@@ -1,5 +1,6 @@
 from collections.abc import Sequence
 
+import numpy as np
 import torch
 from torch import Tensor
 from torch.utils.checkpoint import checkpoint
@@ -11,8 +12,37 @@ from mgamdata.mm.mmseg_Dev3D import EncoderDecoder_3D
 
 
 
-class value_wise_projector(torch.nn.Module):
-    """Value-Wise Projector for one window remapping operation."""
+class WindowExtractor(BaseModule):
+    "Extract values from raw array using a learnable window."
+
+    def __init__(self, 
+                 value_range:list[float],
+                 window_width:int,):
+        self.window_location = torch.nn.Parameter(
+            torch.tensor([value_range[0], value_range[1]]))
+    
+    @property
+    def current_window(self):
+        return self.window_location.detach().cpu().numpy()
+    
+    
+    def forward(self, inputs:Tensor):
+        """
+        Args:
+            inputs (Tensor): (N, ...)
+        """
+        lower_bound = self.window_location[0]
+        upper_bound = self.window_location[1]
+        clipped = torch.clamp(inputs, lower_bound, upper_bound)
+        return clipped
+
+
+
+class ValueWiseProjector(BaseModule):
+    """
+    Value-Wise Projector for one window remapping operation.
+    The extracted value are fine-tuned by this projector.
+    """
     
     def __init__(self, 
                  in_channels:int, 
@@ -41,6 +71,10 @@ class value_wise_projector(torch.nn.Module):
                 start=remap_range[0],
                 end=remap_range[1],
                 step=nbins))
+    
+    @property
+    def current_projection(self):
+        return self.projection_map.detach().cpu().numpy()
     
     
     def regulation(self):
@@ -86,15 +120,50 @@ class value_wise_projector(torch.nn.Module):
 
 
 
-class PMWP(BaseModule):
+class BatchCrossWindowFusion(BaseModule):
+    def __init__(self, num_windows:int):
+        super().__init__()
+        self.window_fusion_weight = torch.nn.Parameter(
+            torch.ones(num_windows, num_windows))
+    
+    @property
+    def current_fusion(self):
+        return self.window_fusion_weight.detach().cpu().numpy()
+    
+    
+    def forward(self, inputs:Tensor):
+        """
+        Args:
+            inputs (Tensor): (Win, N, C, ...)
+        
+        Returns:
+            Tensor: (N, Win*C, ...)
+        """
+        ori_shape = inputs.shape
+        fused = torch.matmul(
+            self.window_fusion_weight, 
+            inputs.reshape(ori_shape[0], -1)
+        ).reshape(ori_shape)
+        
+        # Window Concatenate
+        window_concat_on_channel = fused.transpose(0,1).reshape(
+            ori_shape[1], ori_shape[0]*ori_shape[2], *ori_shape[3:])
+        
+        return window_concat_on_channel # [N, Win*C, ...]
+
+
+
+class ParalleledMultiWindowProcessing(BaseModule):
     """The top module of Paralleled Multi-Window Processing."""
     
     def __init__(self,
                  in_channels:int,
                  embed_dims:int,
                  window_embed_dims:int=32,
+                 window_width:int=200,
                  num_windows:int=4,
                  num_bins:int=512,
+                 data_range:list[float]=[-1024, 3072],
                  remap_range:list[float]=[0,1],
                  dim='3d',
                  use_checkpoint:bool=False
@@ -109,8 +178,10 @@ class PMWP(BaseModule):
         self.in_channels = in_channels
         self.embed_dims = embed_dims
         self.window_embed_dims = window_embed_dims
+        self.window_width = window_width
         self.num_windows = num_windows
         self.num_bins = num_bins
+        self.data_range = data_range
         self.remap_range = remap_range
         self.dim = dim
         self.use_checkpoint = use_checkpoint
@@ -119,16 +190,19 @@ class PMWP(BaseModule):
 
     def _init_PMWP(self):
         for i in range(self.num_windows):
-            setattr(self, f"pmwp_window_{i}", 
-                    value_wise_projector(
-                        in_channels=self.in_channels,
-                        nbins=self.num_bins,
-                        remap_range=self.remap_range,
-                        dim=self.dim))
+            setattr(self, f"window_extractor_{i}", 
+                WindowExtractor(
+                    value_range=self.data_range,
+                    window_width=self.window_width))
+            setattr(self, f"value_wise_projector_{i}", 
+                ValueWiseProjector(
+                    in_channels=self.in_channels,
+                    nbins=self.num_bins,
+                    remap_range=self.remap_range,
+                    dim=self.dim))
         
         # TODO Maybe Point-Wise Attention?
-        self.window_fusion_weight = torch.nn.Parameter(
-            torch.ones(self.num_windows, self.num_windows))
+        self.cross_window_fusion = BatchCrossWindowFusion(self.num_windows)
 
 
     def forward_PMWP(self, inputs:Sequence[Tensor]):
@@ -138,32 +212,31 @@ class PMWP(BaseModule):
                 Each element is a tensor of shape (N, C, ...).
                 The length of the list is num_windows.
         """
-        pmwp_embedded = []
+        x = []
         
         for i, window in enumerate(inputs):
-            projected = getattr(self, f"pmwp_window_{i}")(window)
-            pmwp_embedded.append(projected)
-        pmwp_embedded = torch.stack(pmwp_embedded, dim=0) # [W, N, C, ...]
-        ori_shape = pmwp_embedded.shape
+            extracted = getattr(self, f"window_extractor_{i}")(window)
+            projected = getattr(self, f"value_wise_projector_{i}")(extracted)
+            x.append(projected)
+        x = torch.stack(x, dim=0) # [W, N, C, ...]
         
-        # Cross-Window Fusion
-        fused = torch.matmul(
-            self.window_fusion_weight, 
-            pmwp_embedded.reshape(ori_shape[0], -1)
-        ).reshape(ori_shape)
+        x = self.cross_window_fusion(x) # [N, Win*C, ...]
         
-        # Window Concatenate
-        window_concat_on_channel = fused.transpose(0,1).reshape(
-            ori_shape[0], ori_shape[1]*ori_shape[2], *ori_shape[3:])
-        
-        return window_concat_on_channel # [N, Win*C, ...]
+        return x # [N, Win*C, ...]
 
 
-class PMWP_Warpper(EncoderDecoder_3D):
+
+class AutoWindowSettingWarpper(EncoderDecoder_3D):
+    "Compatible Plugin for Auto Window Setting."
+    
+    def __init__(self, pmwp:dict, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.pmwp = MODELS.build(pmwp)
+    
+    
     def extract_feat(self, inputs:Tensor):
         # inputs: [N, C, ...]
-        pmwp_out = self.checkpoint(self.forward_PMWP, inputs)
-        x = self.checkpoint(self.backbone, pmwp_out)
-        if self.with_neck:
-            x = self.checkpoint(self.neck, x)
-        return x
+        # pmwp_out: [N, num_window * C, ...]
+        # TODO Downsampling Channel?
+        pmwp_out = self.checkpoint(self.pmwp, inputs)
+        return super().extract_feat(pmwp_out)
