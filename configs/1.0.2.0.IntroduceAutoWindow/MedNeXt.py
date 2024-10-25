@@ -2,15 +2,23 @@ from mmengine.config import read_base
 with read_base():
     from .mgam import *
 
+from mgamdata.models.AutoWindow import AutoWindowSetting, ParalleledMultiWindowProcessing
 from mgamdata.models.MedNeXt import MM_MedNext_Encoder, MM_MedNext_Decoder_3D
 from mgamdata.mm.mmseg_Dev3D import EncoderDecoder_3D, DiceLoss_3D
 
 # 神经网络设定
 model = dict(
-    type = EncoderDecoder_3D,
+    type = AutoWindowSetting,
+    pmwp = dict(
+        type=ParalleledMultiWindowProcessing,
+        in_channels=in_channels,
+        embed_dims=embed_dims,
+        num_windows=num_parallel_windows,
+        proj_order=4,
+    ),
     backbone = dict(
         type=MM_MedNext_Encoder,
-        in_channels=in_channels,
+        in_channels=in_channels * num_parallel_windows, # type: ignore
         embed_dims=embed_dims,
         kernel_size=3,
         dim="3d",

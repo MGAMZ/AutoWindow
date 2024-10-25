@@ -39,9 +39,9 @@ from mgamdata.mm.mmseg_Dev3D import (
 # --------------------PARAMETERS-------------------- #
 debug    = False                            # 调试模式
 use_AMP  = True                             # AMP加速
-dist     = True if not debug else False     # 多卡训练总控
+dist     = False if not debug else False     # 多卡训练总控
 use_FSDP = False if not debug else False    # 多卡训练FSDP高级模式
-Compile  = True if not debug else False     # torch.dynamo
+Compile  = False if not debug else False     # torch.dynamo
 workers  = 4 if not debug else 0            # DataLoader Worker
 
 # Totalsegmentator Dataset
@@ -61,6 +61,7 @@ batch_size = 1 if not debug else 2
 grad_accumulation = 2 if not debug else 2
 embed_dims = 48 if not debug else 8
 in_channels = 1
+num_parallel_windows = 4
 size = (128,128,128)        # 单次前向处理的分辨率, 不限制推理
 deep_supervision = True
 use_checkpoint = False      # torch.checkpoint
@@ -208,7 +209,11 @@ optim_wrapper = dict(
                    nesterov=True),
     clip_grad=dict(max_norm=1,
                    norm_type=2,
-                   error_if_nonfinite=False)
+                   error_if_nonfinite=False),
+    paramwise_cfg=dict(
+        custom_keys=dict(
+            pmwp=dict(
+                decay_mult=0))),
 )
 
 # 学习率调整策略
