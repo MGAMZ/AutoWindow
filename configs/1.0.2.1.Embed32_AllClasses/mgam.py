@@ -47,7 +47,7 @@ workers  = 4 if not debug else 0            # DataLoader Worker
 # Totalsegmentator Dataset
 pre_crop_data_root = '/home/zhangyq.sx/Totalsegmentator_Data/Totalsegmentator_dataset_v201/spacing_1_crop128_ccm0.5_npz/'
 mha_data_root = '/home/zhangyq.sx/Totalsegmentator_Data/Totalsegmentator_dataset_v201/spacing_1_mha'
-subset = 'organ' # ['organ', None]
+subset = None # ['organ', None]
 num_classes = 119 if subset is None else LENGTH_SUBSET[subset]
 val_sample_ratio = 0.1
 wl = 193    # window loacation
@@ -56,19 +56,19 @@ pad_val = -2000
 seg_pad_val = 0
 
 # 神经网络超参
-lr = 1e-2
+lr = 1e-4
 batch_size = 1 if not debug else 2
 grad_accumulation = 2 if not debug else 2
-embed_dims = 48 if not debug else 8
+embed_dims = 32 if not debug else 8
 in_channels = 1
 num_parallel_windows = 4
-size = (128,128,128)        # 单次前向处理的分辨率, 不限制推理
+size = (96,96,96)        # 单次前向处理的分辨率, 不限制推理
 deep_supervision = True
 use_checkpoint = False      # torch.checkpoint
 
 # 流程控制
 iters = 1000000 if not debug else 3
-logger_interval = 200 if not debug else 1
+logger_interval = 500 if not debug else 1
 save_interval = 5000 if not debug else 2
 val_on_train = True
 val_interval = 5000 if not debug else 2
@@ -202,11 +202,9 @@ if not val_on_train:
 optim_wrapper = dict(
     type=AmpOptimWrapper if use_AMP else OptimWrapper,
     accumulative_counts=grad_accumulation,
-    optimizer=dict(type=SGD,
+    optimizer=dict(type=AdamW,
                    lr=lr,
-                   weight_decay=2e-5,
-                   momentum=0.99,
-                   nesterov=True),
+                   weight_decay=1e-4),
     clip_grad=dict(max_norm=1,
                    norm_type=2,
                    error_if_nonfinite=False),
