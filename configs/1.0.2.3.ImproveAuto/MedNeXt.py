@@ -9,14 +9,14 @@ from mgamdata.mm.mmseg_Dev3D import EncoderDecoder_3D, DiceLoss_3D
 # 神经网络设定
 model = dict(
     type = AutoWindowSetting,
+    regulation_weight=1e-2,
     pmwp = dict(
         type=ParalleledMultiWindowProcessing,
         in_channels=in_channels,
         embed_dims=embed_dims,
         num_windows=num_parallel_windows,
-        proj_order=8,
+        proj_order=6,
         data_range=[-1024, 3072],
-        regulation_weight=1e-2,
     ),
     backbone = dict(
         type=MM_MedNext_Encoder,

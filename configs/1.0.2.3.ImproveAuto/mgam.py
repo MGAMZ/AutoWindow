@@ -56,7 +56,7 @@ seg_pad_val = 0
 
 # 神经网络超参
 lr = 1e-4
-batch_size = 4 if not debug else 2
+batch_size = 8 if not debug else 2
 grad_accumulation = 1 if not debug else 2
 embed_dims = 32 if not debug else 8
 in_channels = 1
@@ -66,7 +66,7 @@ deep_supervision = True
 use_checkpoint = False  # torch.checkpoint
 
 # 流程控制
-iters = 1000000 if not debug else 3
+iters = 500000 if not debug else 3
 logger_interval = 500 if not debug else 1
 save_interval = 5000 if not debug else 2
 val_on_train = True
