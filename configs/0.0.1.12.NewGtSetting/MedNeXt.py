@@ -2,6 +2,7 @@ from mmengine.config import read_base
 with read_base():
     from .mgam import *
 
+from mgamdata.models.AutoWindow import AutoWindowSetting, ParalleledMultiWindowProcessing
 from mgamdata.models.MedNeXt import MM_MedNext_Encoder, MM_MedNext_Decoder_3D
 from mgamdata.mm.mmseg_Dev3D import EncoderDecoder_3D, DiceLoss_3D
 
@@ -25,6 +26,7 @@ model = dict(
         use_checkpoint=use_checkpoint,
         deep_supervision=deep_supervision,
         ignore_index=0, # 仅对train acc计算有效
+        loss_gt_key='gt_sem_seg_one_hot', # ["gt_sem_seg_one_hot", "gt_sem_seg"]
         loss_decode=dict(
             type=DiceLoss_3D,
             use_sigmoid=False,

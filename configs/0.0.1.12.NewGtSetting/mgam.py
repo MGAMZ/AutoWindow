@@ -23,7 +23,7 @@ from mmengine.visualization import TensorboardVisBackend
 from mgamdata.mm.mmeng_PlugIn import LoggerJSON
 from mgamdata.mm.mmseg_PlugIn import IoUMetric_PerClass
 from mgamdata.mm.mmeng_PlugIn import RemasteredDDP, RemasteredFSDP, RatioSampler
-from mgamdata.process.GeneralPreProcess import WindowSet, TypeConvert, InstanceNorm
+from mgamdata.process.GeneralPreProcess import WindowSet, TypeConvert, InstanceNorm, ExpandOneHot
 from mgamdata.process.LoadBiomedicalData import LoadImageFromMHA, LoadMaskFromMHA, LoadSampleFromNpz
 from mgamdata.dataset.Totalsegmentator.mm_dataset import (
     TotalsegmentatorSeg3DDataset, ParseID, Tsd3D_PreCrop_Npz)
@@ -100,6 +100,7 @@ train_pipeline = [
     dict(type=LoadSampleFromNpz, load_type=['img']),
     dict(type=ParseID),
     dict(type=LoadSampleFromNpz, load_type=['anno']),
+    dict(type=ExpandOneHot, num_classes=num_classes),
     dict(type=WindowSet, location=wl, width=ww),
     dict(type=InstanceNorm),
     dict(type=TypeConvert),
@@ -112,6 +113,7 @@ val_pipeline = test_pipeline = [
     dict(type=WindowSet, location=wl, width=ww),
     dict(type=InstanceNorm),
     dict(type=LoadMaskFromMHA),
+    dict(type=ExpandOneHot, num_classes=num_classes),
     dict(type=TypeConvert),
     dict(type=PackSeg3DInputs, meta_keys=meta_keys)
 ]
@@ -141,7 +143,7 @@ val_dataloader = dict(
     pin_memory=False,
     persistent_workers=True if workers > 0 else False,
     sampler=dict(
-        type=RatioSampler,
+        type=RatioSampler, 
         shuffle=False, 
         use_sample_ratio=val_sample_ratio),
     dataset=dict(
@@ -182,6 +184,7 @@ data_preprocessor = dict(
     pad_val=pad_val,
     seg_pad_val=seg_pad_val,
     test_cfg=dict(size=size),
+    non_blocking=True,
 )
 
 # 训练策略
@@ -206,7 +209,7 @@ optim_wrapper = dict(
                    weight_decay=1e-2),
     clip_grad=dict(max_norm=1,
                    norm_type=2,
-                   error_if_nonfinite=False)
+                   error_if_nonfinite=False),
 )
 
 # 学习率调整策略

@@ -34,6 +34,7 @@ model = dict(
         use_checkpoint=use_checkpoint,
         deep_supervision=deep_supervision,
         ignore_index=0, # 仅对train acc计算有效
+        loss_gt_key='gt_sem_seg_one_hot', # ["gt_sem_seg_one_hot", "gt_sem_seg"]
         loss_decode=dict(
             type=DiceLoss_3D,
             use_sigmoid=False,
