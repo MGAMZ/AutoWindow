@@ -23,7 +23,7 @@ from mmengine.visualization import TensorboardVisBackend
 from mgamdata.mm.mmeng_PlugIn import LoggerJSON
 from mgamdata.mm.mmseg_PlugIn import IoUMetric_PerClass
 from mgamdata.mm.mmeng_PlugIn import RemasteredDDP, RemasteredFSDP, RatioSampler
-from mgamdata.process.GeneralPreProcess import WindowSet, TypeConvert, InstanceNorm
+from mgamdata.process.GeneralPreProcess import WindowSet, TypeConvert, InstanceNorm, ExpandOneHot
 from mgamdata.process.LoadBiomedicalData import LoadImageFromMHA, LoadMaskFromMHA, LoadSampleFromNpz
 from mgamdata.dataset.Totalsegmentator.mm_dataset import (
     TotalsegmentatorSeg3DDataset, ParseID, Tsd3D_PreCrop_Npz)
@@ -38,7 +38,7 @@ from mgamdata.mm.mmseg_Dev3D import (
 # --------------------PARAMETERS-------------------- #
 debug    = False                            # 调试模式
 use_AMP  = True                             # AMP加速
-dist     = False if not debug else False     # 多卡训练总控
+dist     = False if not debug else False    # 多卡训练总控
 use_FSDP = False if not debug else False    # 多卡训练FSDP高级模式
 Compile  = True if not debug else False     # torch.dynamo
 workers  = 4 if not debug else 0            # DataLoader Worker
@@ -56,7 +56,7 @@ seg_pad_val = 0
 
 # 神经网络超参
 lr = 1e-4
-batch_size = 2 if not debug else 2
+batch_size = 4 if not debug else 2
 grad_accumulation = 4 if not debug else 2
 embed_dims = 32 if not debug else 8
 in_channels = 1
@@ -65,7 +65,7 @@ deep_supervision = True
 use_checkpoint = False  # torch.checkpoint
 
 # 流程控制
-iters = 1000000 if not debug else 3
+iters = 500000 if not debug else 3
 logger_interval = 500 if not debug else 1
 save_interval = 5000 if not debug else 2
 val_on_train = True
@@ -100,6 +100,7 @@ train_pipeline = [
     dict(type=LoadSampleFromNpz, load_type=['img']),
     dict(type=ParseID),
     dict(type=LoadSampleFromNpz, load_type=['anno']),
+    dict(type=ExpandOneHot, num_classes=num_classes),
     # dict(type=WindowSet, location=wl, width=ww),
     dict(type=InstanceNorm),
     dict(type=TypeConvert),
@@ -112,9 +113,11 @@ val_pipeline = test_pipeline = [
     # dict(type=WindowSet, location=wl, width=ww),
     dict(type=InstanceNorm),
     dict(type=LoadMaskFromMHA),
+    dict(type=ExpandOneHot, num_classes=num_classes),
     dict(type=TypeConvert),
     dict(type=PackSeg3DInputs, meta_keys=meta_keys)
 ]
+
 
 train_dataloader = dict(
     batch_size=batch_size,
@@ -181,6 +184,7 @@ data_preprocessor = dict(
     pad_val=pad_val,
     seg_pad_val=seg_pad_val,
     test_cfg=dict(size=size),
+    non_blocking=True,
 )
 
 # 训练策略
@@ -206,10 +210,6 @@ optim_wrapper = dict(
     clip_grad=dict(max_norm=1,
                    norm_type=2,
                    error_if_nonfinite=False),
-    # paramwise_cfg=dict(
-    #     custom_keys=dict(
-    #         pmwp=dict(
-    #             decay_mult=0))),
 )
 
 # 学习率调整策略
