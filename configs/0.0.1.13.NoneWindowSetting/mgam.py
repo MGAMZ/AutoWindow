@@ -97,9 +97,8 @@ meta_keys = (
     'flip_direction', 'reduce_zero_label', 'series_id')
 
 train_pipeline = [
-    dict(type=LoadSampleFromNpz, load_type=['img']),
+    dict(type=LoadSampleFromNpz, load_type=['img', 'anno']),
     dict(type=ParseID),
-    dict(type=LoadSampleFromNpz, load_type=['anno']),
     dict(type=ExpandOneHot, num_classes=num_classes),
     # dict(type=WindowSet, location=wl, width=ww),
     dict(type=InstanceNorm),
