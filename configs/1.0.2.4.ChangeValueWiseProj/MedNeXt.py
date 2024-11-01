@@ -15,7 +15,8 @@ model = dict(
         in_channels=in_channels,
         embed_dims=embed_dims,
         num_windows=num_parallel_windows,
-        num_rectify=8,
+        num_rect=8,
+        rect_momentum=0.99, 
         data_range=[-1024, 3072],
     ),
     backbone = dict(

@@ -40,7 +40,7 @@ debug    = False                            # 调试模式
 use_AMP  = True                             # AMP加速
 dist     = True if not debug else False     # 多卡训练总控
 use_FSDP = False if not debug else False    # 多卡训练FSDP高级模式
-Compile  = False if not debug else False     # torch.dynamo
+Compile  = True if not debug else False     # torch.dynamo
 workers  = 4 if not debug else 0            # DataLoader Worker
 
 # Totalsegmentator Dataset
@@ -210,10 +210,10 @@ optim_wrapper = dict(
     clip_grad=dict(max_norm=1,
                    norm_type=2,
                    error_if_nonfinite=False),
-    paramwise_cfg=dict(
-        custom_keys=dict(
-            pmwp=dict(
-                decay_mult=0))),
+    # paramwise_cfg=dict(
+    #     custom_keys=dict(
+    #         pmwp=dict(
+    #             decay_mult=0))),
 )
 
 # 学习率调整策略
