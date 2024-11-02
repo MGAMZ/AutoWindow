@@ -56,8 +56,8 @@ seg_pad_val = 0
 
 # 神经网络超参
 lr = 1e-4
-batch_size = 8 if not debug else 2
-grad_accumulation = 1 if not debug else 2
+batch_size = 2 if not debug else 2
+grad_accumulation = 4 if not debug else 2
 embed_dims = 32 if not debug else 8
 in_channels = 1
 num_parallel_windows = 4
