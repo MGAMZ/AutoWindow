@@ -44,7 +44,11 @@ model = dict(
         loss_decode=dict(
             type=DiceLoss_3D,
             use_sigmoid=False,
-            ignore_index=None, # NOTE Severe performance overhead when not being set to None.
+            ignore_1st_index=True,
+            # NOTE Severe performance overhead when not being set to None.
+            # NOTE Prefer using `ignore_1st_index`.
+            # NOTE Invalid Class (Defaults to the last class) has been masked out during preprocess.
+            ignore_index=None,
         ),
     ),
     test_cfg=dict(

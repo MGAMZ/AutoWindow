@@ -114,7 +114,9 @@ val_pipeline = test_pipeline = [
     # dict(type=WindowSet, location=wl, width=ww),
     # dict(type=InstanceNorm),
     dict(type=LoadMaskFromMHA),
-    dict(type=ExpandOneHot, num_classes=num_classes),
+    dict(type=ExpandOneHot, 
+         num_classes=num_classes, 
+         ignore_index=255),
     dict(type=TypeConvert),
     dict(type=PackSeg3DInputs, meta_keys=meta_keys)
 ]
