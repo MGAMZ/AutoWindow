@@ -17,8 +17,9 @@ model = dict(
         num_windows=num_parallel_windows,
         num_rect=8,
         rect_momentum=0.99,
-        log_interval=logger_interval,
         data_range=[-1024, 3072],
+        log_interval=logger_interval,
+        enable_VWP=True,
     ),
     backbone = dict(
         type=MM_MedNext_Encoder,
@@ -41,7 +42,8 @@ model = dict(
         loss_decode=dict(
             type=DiceLoss_3D,
             use_sigmoid=False,
-            ignore_index=0),
+            ignore_index=None, # NOTE Severe performance overhead when not being set to None.
+        ),
     ),
     test_cfg=dict(
         mode='slide',
