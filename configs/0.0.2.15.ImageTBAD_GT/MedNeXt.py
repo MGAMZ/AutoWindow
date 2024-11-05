@@ -17,7 +17,7 @@ model = dict(
     #     num_windows=num_windows,
     #     num_rect=num_rect,
     #     rect_momentum=0.99,
-    #     data_range=[-1024, 3072],
+    #     data_range=data_range,
     #     log_interval=logger_interval,
     #     enable_VWP=True,
     # ),
@@ -28,7 +28,7 @@ model = dict(
         kernel_size=3,
         dim="3d",
         use_checkpoint=use_checkpoint,
-        norm_type='layer',
+        norm_type='group',
     ),
     decode_head = dict(
         type=MM_MedNext_Decoder_3D,
@@ -38,7 +38,7 @@ model = dict(
         out_channels=num_classes,
         use_checkpoint=use_checkpoint,
         deep_supervision=deep_supervision,
-        norm_type='layer',
+        norm_type='group',
         ignore_index=0, # 仅对train acc计算有效
         loss_gt_key='gt_sem_seg_one_hot', # ["gt_sem_seg_one_hot", "gt_sem_seg"]
         loss_decode=dict(
@@ -54,6 +54,6 @@ model = dict(
     test_cfg=dict(
         mode='slide',
         crop_size=size,
-        stride=size,
+        stride=[i//2 for i in size],
         slide_accumulate_device='cpu'),
 )
