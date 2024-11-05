@@ -43,12 +43,12 @@ Compile  = True if not debug else False     # torch.dynamo
 workers  = 4 if not debug else 0            # DataLoader Worker
 
 # Totalsegmentator Dataset
-pre_crop_data_root = '/file1/mgam_datasets/ImageTBAD/spacing2_crop64_ccm0.5_npz/'
+pre_crop_data_root = '/file1/mgam_datasets/ImageTBAD/spacing2_crop16-160-160_npz/'
 mha_data_root = '/file1/mgam_datasets/ImageTBAD/spacing2_mha/'
 num_classes = 4
 val_sample_ratio = 1.0
-wl = 193    # window loacation
-ww = 800    # window width
+wl = 1300    # window loacation
+ww = 500     # window width
 pad_val = -2000
 seg_pad_val = 0
 
@@ -60,7 +60,8 @@ embed_dims = 32 if not debug else 8
 in_channels = 1
 num_windows = 8
 num_rect = 8
-size = (64,64,64)       # 单次前向处理的分辨率, 不限制推理
+size = (16,160,160)     # 单次前向处理的分辨率, 不限制推理
+data_range = (0, 2048)  # 数据值域
 deep_supervision = True
 use_checkpoint = False  # torch.checkpoint
 
@@ -101,7 +102,7 @@ train_pipeline = [
     dict(type=ParseID),
     dict(type=ExpandOneHot, num_classes=num_classes),
     # dict(type=WindowSet, location=wl, width=ww),
-    # dict(type=InstanceNorm),
+    dict(type=InstanceNorm),
     dict(type=TypeConvert),
     dict(type=PackSeg3DInputs, meta_keys=meta_keys)
 ]
@@ -110,11 +111,11 @@ val_pipeline = test_pipeline = [
     dict(type=LoadImageFromMHA),
     dict(type=ParseID),
     # dict(type=WindowSet, location=wl, width=ww),
-    # dict(type=InstanceNorm),
+    dict(type=InstanceNorm),
     dict(type=LoadMaskFromMHA),
     dict(type=ExpandOneHot, 
          num_classes=num_classes, 
-         ignore_index=255),
+         ignore_index=None),
     dict(type=TypeConvert),
     dict(type=PackSeg3DInputs, meta_keys=meta_keys)
 ]
@@ -173,7 +174,7 @@ test_dataloader = dict(
 val_evaluator = test_evaluator = dict(
     type=IoUMetric_PerClass, 
     ignore_index=255, 
-    iou_metrics=['mIoU','mDice'], 
+    iou_metrics=['mIoU','mDice', 'mFscore'], 
     prefix='Perf')
 
 data_preprocessor = dict(

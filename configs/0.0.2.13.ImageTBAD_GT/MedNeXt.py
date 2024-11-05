@@ -4,26 +4,26 @@ with read_base():
 
 from mgamdata.models.AutoWindow import AutoWindowSetting, ParalleledMultiWindowProcessing
 from mgamdata.models.MedNeXt import MM_MedNext_Encoder, MM_MedNext_Decoder_3D
-from mgamdata.mm.mmseg_Dev3D import DiceLoss_3D
+from mgamdata.mm.mmseg_Dev3D import DiceLoss_3D, EncoderDecoder_3D
 
 # 神经网络设定
 model = dict(
-    type = AutoWindowSetting,
-    regulation_weight=0.,
-    pmwp = dict(
-        type=ParalleledMultiWindowProcessing,
-        in_channels=in_channels,
-        embed_dims=embed_dims,
-        num_windows=num_windows,
-        num_rect=num_rect,
-        rect_momentum=0.99,
-        data_range=[-1024, 3072],
-        log_interval=logger_interval,
-        enable_VWP=True,
-    ),
+    type = EncoderDecoder_3D,
+    # regulation_weight=0.,
+    # pmwp = dict(
+    #     type=ParalleledMultiWindowProcessing,
+    #     in_channels=in_channels,
+    #     embed_dims=embed_dims,
+    #     num_windows=num_windows,
+    #     num_rect=num_rect,
+    #     rect_momentum=0.99,
+    #     data_range=[-1024, 3072],
+    #     log_interval=logger_interval,
+    #     enable_VWP=True,
+    # ),
     backbone = dict(
         type=MM_MedNext_Encoder,
-        in_channels=in_channels * num_windows, # type: ignore
+        in_channels=in_channels, # type: ignore
         embed_dims=embed_dims,
         kernel_size=3,
         dim="3d",
@@ -44,7 +44,7 @@ model = dict(
         loss_decode=dict(
             type=DiceLoss_3D,
             use_sigmoid=False,
-            ignore_1st_index=True,
+            ignore_1st_index=False,
             # NOTE Severe performance overhead when not being set to None.
             # NOTE Prefer using `ignore_1st_index`.
             # NOTE Invalid Class (Defaults to the last class) has been masked out during preprocess.
