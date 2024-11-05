@@ -42,14 +42,14 @@ use_FSDP = False if not debug else False    # 多卡训练FSDP高级模式
 Compile  = True if not debug else False     # torch.dynamo
 workers  = 4 if not debug else 0            # DataLoader Worker
 
-# Totalsegmentator Dataset
+# ImageTBAD Dataset
 pre_crop_data_root = '/file1/mgam_datasets/ImageTBAD/spacing2_crop64_npz/'
 mha_data_root = '/file1/mgam_datasets/ImageTBAD/spacing2_mha/'
 num_classes = 4
 val_sample_ratio = 1.0
 wl = 1300    # window loacation
 ww = 500     # window width
-pad_val = -2000
+pad_val = 0
 seg_pad_val = 0
 
 # 神经网络超参
@@ -71,6 +71,7 @@ logger_interval = 500 if not debug else 1
 save_interval = 5000 if not debug else 2
 val_on_train = True
 val_interval = 5000 if not debug else 2
+vis_interval = 20
 dynamic_intervals = None
 # dynamic_intervals = [ # 动态验证间隔
 #     (5, 5),
@@ -238,7 +239,7 @@ default_hooks = dict(
     visualization=dict(
         type=Seg3DVisualizationHook, 
         draw=True, 
-        interval=100 if not debug else 1),
+        interval=vis_interval if not debug else 1),
 )
 
 # torch.dynamo
