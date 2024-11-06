@@ -36,7 +36,7 @@ from mgamdata.mm.mmseg_Dev3D import (
 
 
 # --------------------PARAMETERS-------------------- #
-debug    = True                            # 调试模式
+debug    = False                            # 调试模式
 use_AMP  = True                             # AMP加速
 dist     = True if not debug else False     # 多卡训练总控
 use_FSDP = False if not debug else False    # 多卡训练FSDP高级模式
@@ -60,7 +60,7 @@ batch_size = 4 if not debug else 2
 grad_accumulation = 1 if not debug else 2
 embed_dims = 32 if not debug else 8
 in_channels = 1
-num_windows = 8
+num_windows = 16
 num_rect = 8
 size = (64,64,64)       # 单次前向处理的分辨率, 不限制推理
 deep_supervision = True
@@ -71,19 +71,14 @@ iters = 500000 if not debug else 3
 logger_interval = 500 if not debug else 1
 save_interval = 5000 if not debug else 2
 val_on_train = True
-val_interval = 5000 if not debug else 2
+val_interval = 100 if not debug else 2
 vis_interval = 20
-dynamic_intervals = None
-# dynamic_intervals = [ # 动态验证间隔
-#     (5, 5),
-#     (50, 10),
-#     (100, 25),
-#     (300, 100),
-#     (1000, 250),
-#     (3000, 500),
-#     (5000, 1000),
-#     (20000, 5000)
-# ]
+# dynamic_intervals = None
+dynamic_intervals = [ # 动态验证间隔
+    (5, 100), 
+    (150, 1000), 
+    (2500, 5000)
+]
 
 
 

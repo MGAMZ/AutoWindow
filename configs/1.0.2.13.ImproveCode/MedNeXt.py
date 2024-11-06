@@ -59,5 +59,5 @@ model = dict(
 )
 
 custom_hooks = [
-    dict(type=AutoWindowStatusLoggerHook),
+    dict(type=AutoWindowStatusLoggerHook, dpi=100),
 ]
