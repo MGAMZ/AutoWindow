@@ -25,43 +25,44 @@ from mgamdata.mm.mmseg_PlugIn import IoUMetric_PerClass
 from mgamdata.mm.mmeng_PlugIn import RemasteredDDP, RemasteredFSDP, RatioSampler
 from mgamdata.process.GeneralPreProcess import WindowSet, TypeConvert, InstanceNorm, ExpandOneHot
 from mgamdata.process.LoadBiomedicalData import LoadImageFromMHA, LoadMaskFromMHA, LoadSampleFromNpz
-from mgamdata.dataset.ImageTBAD.mm_dataset import (
-    ImageTBAD_Seg3DDataset, TBAD_3Dnpz, ParseID)
+from mgamdata.dataset.Totalsegmentator.mm_dataset import (
+    TotalsegmentatorSeg3DDataset, ParseID, Tsd3D_PreCrop_Npz)
 from mgamdata.mm.mmseg_Dev3D import (
-    PackSeg3DInputs, Seg3DDataPreProcessor, Seg3DLocalVisualizer, Seg3DVisualizationHook,
+    PackSeg3DInputs, Resize3D, RandomCrop3D,
+    Seg3DDataPreProcessor, Seg3DLocalVisualizer, Seg3DVisualizationHook,
 )
 
 
 
 
 # --------------------PARAMETERS-------------------- #
-debug    = False                            # 调试模式
+debug    = True                            # 调试模式
 use_AMP  = True                             # AMP加速
-dist     = False if not debug else False    # 多卡训练总控
+dist     = True if not debug else False     # 多卡训练总控
 use_FSDP = False if not debug else False    # 多卡训练FSDP高级模式
 Compile  = True if not debug else False     # torch.dynamo
 workers  = 4 if not debug else 0            # DataLoader Worker
 
-# ImageTBAD Dataset
-pre_crop_data_root = '/file1/mgam_datasets/ImageTBAD/spacing2_crop16-256-256_npz/'
-mha_data_root = '/file1/mgam_datasets/ImageTBAD/spacing2_mha/'
-num_classes = 4
-val_sample_ratio = 1.0
-wl = 1300    # window loacation
-ww = 500     # window width
-pad_val = 0
+# Totalsegmentator Dataset
+pre_crop_data_root = '/home/zhangyq.sx/Totalsegmentator_Data/Totalsegmentator_dataset_v201/spacing2_crop64_ccm0.5_npz/'
+mha_data_root = '/home/zhangyq.sx/Totalsegmentator_Data/Totalsegmentator_dataset_v201/spacing2_mha'
+subset = None # ['organ', None]
+num_classes = 119 if subset is None else LENGTH_SUBSET[subset]
+val_sample_ratio = 0.1
+wl = 193    # window loacation
+ww = 800    # window width
+pad_val = -2000
 seg_pad_val = 0
 
 # 神经网络超参
 lr = 1e-4
-batch_size = 1 if not debug else 2
-grad_accumulation = 4 if not debug else 2
+batch_size = 4 if not debug else 2
+grad_accumulation = 1 if not debug else 2
 embed_dims = 32 if not debug else 8
 in_channels = 1
 num_windows = 8
 num_rect = 8
-size = (16,256,256)     # 单次前向处理的分辨率, 不限制推理
-data_range = (0, 2048)  # 数据值域
+size = (64,64,64)       # 单次前向处理的分辨率, 不限制推理
 deep_supervision = True
 use_checkpoint = False  # torch.checkpoint
 
@@ -101,11 +102,8 @@ meta_keys = (
 train_pipeline = [
     dict(type=LoadSampleFromNpz, load_type=['img', 'anno']),
     dict(type=ParseID),
-    dict(type=ExpandOneHot, 
-         num_classes=num_classes, 
-         ignore_index=None),
-    dict(type=WindowSet, location=wl, width=ww),
-    dict(type=InstanceNorm),
+    # dict(type=WindowSet, location=wl, width=ww),
+    # dict(type=InstanceNorm),
     dict(type=TypeConvert),
     dict(type=PackSeg3DInputs, meta_keys=meta_keys)
 ]
@@ -113,12 +111,9 @@ train_pipeline = [
 val_pipeline = test_pipeline = [
     dict(type=LoadImageFromMHA),
     dict(type=ParseID),
-    dict(type=WindowSet, location=wl, width=ww),
-    dict(type=InstanceNorm),
+    # dict(type=WindowSet, location=wl, width=ww),
+    # dict(type=InstanceNorm),
     dict(type=LoadMaskFromMHA),
-    dict(type=ExpandOneHot, 
-         num_classes=num_classes, 
-         ignore_index=None),
     dict(type=TypeConvert),
     dict(type=PackSeg3DInputs, meta_keys=meta_keys)
 ]
@@ -134,9 +129,10 @@ train_dataloader = dict(
         type=InfiniteSampler, 
         shuffle=False if debug else True),
     dataset=dict(
-        type=TBAD_3Dnpz,
+        type=Tsd3D_PreCrop_Npz,
         split='train',
         data_root=pre_crop_data_root,
+        subset=subset,
         pipeline=train_pipeline,
         debug=debug,
     ),
@@ -151,9 +147,10 @@ val_dataloader = dict(
         shuffle=False, 
         use_sample_ratio=val_sample_ratio),
     dataset=dict(
-        type=ImageTBAD_Seg3DDataset,
+        type=TotalsegmentatorSeg3DDataset,
         split='val',
         data_root=mha_data_root,
+        subset=subset,
         pipeline=val_pipeline,
         debug=debug,
     ),
@@ -165,9 +162,10 @@ test_dataloader = dict(
     persistent_workers=True if workers > 0 else False,
     sampler=dict(type=DefaultSampler, shuffle=False),
     dataset=dict(
-        type=ImageTBAD_Seg3DDataset,
+        type=TotalsegmentatorSeg3DDataset,
         split='test',
         data_root=mha_data_root,
+        subset=subset,
         pipeline=test_pipeline,
         debug=debug,
     ),
