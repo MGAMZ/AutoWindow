@@ -12,7 +12,7 @@ from mmengine.hooks.param_scheduler_hook import ParamSchedulerHook
 from mmengine.hooks.checkpoint_hook import CheckpointHook
 from mmengine.hooks import DistSamplerSeedHook
 from mmengine.runner import IterBasedTrainLoop
-from mmengine.optim.scheduler import LinearLR
+from mmengine.optim.scheduler import LinearLR, PolyLR
 from mmengine.optim import OptimWrapper, AmpOptimWrapper
 from mmengine._strategy import FSDPStrategy
 from mmengine.dataset.sampler import DefaultSampler, InfiniteSampler
@@ -49,26 +49,27 @@ mha_data_root = '/home/zhangyq.sx/Totalsegmentator_Data/Totalsegmentator_dataset
 subset = None # ['organ', None]
 num_classes = 119 if subset is None else LENGTH_SUBSET[subset]
 val_sample_ratio = 0.1
-wl = 193    # window loacation
-ww = 800    # window width
+wl = None    # window loacation
+ww = None    # window width
 pad_val = -2000
 seg_pad_val = 0
 
 # 神经网络超参
 lr = 1e-4
+pmwp_lr_mult = 10
 batch_size = 4 if not debug else 2
 grad_accumulation = 1 if not debug else 2
 embed_dims = 32 if not debug else 8
 in_channels = 1
 num_windows = 16
-num_rect = 8
+num_rect = 32
 size = (64,64,64)       # 单次前向处理的分辨率, 不限制推理
 deep_supervision = True
 use_checkpoint = False  # torch.checkpoint
 
 # 流程控制
 iters = 500000 if not debug else 3
-logger_interval = 5 if not debug else 1
+logger_interval = 200 if not debug else 1
 save_interval = 5000 if not debug else 2
 val_on_train = True
 val_interval = 100 if not debug else 2
@@ -201,21 +202,34 @@ optim_wrapper = dict(
     accumulative_counts=grad_accumulation,
     optimizer=dict(type=AdamW,
                    lr=lr,
-                   weight_decay=1e-4),
+                   weight_decay=1e-2),
     clip_grad=dict(max_norm=1,
                    norm_type=2,
                    error_if_nonfinite=False),
     # paramwise_cfg=dict(
     #     custom_keys=dict(
     #         pmwp=dict(
-    #             decay_mult=0))),
+    #             decay_mult=0,
+    #             lr_mult=10))),
 )
 
 # 学习率调整策略
 param_scheduler = [
-    
+    dict(
+        type=LinearLR,
+        start_factor=1e-3,
+        end=iters*0.005,
+        by_epoch=False,
+    ),
+    dict(
+        type=PolyLR,
+        eta_min=lr*1e-2,
+        power=0.6,
+        begin=0.3*iters,
+        end=0.95*iters,
+        by_epoch=False,
+    )
 ]
-
 
 default_hooks = dict(
     timer=dict(type=IterTimerHook),
@@ -282,8 +296,10 @@ visualizer = dict(
     type=Seg3DLocalVisualizer, 
     vis_backends=vis_backends, 
     name='visualizer',
-    alpha=0.2,
-    resize=(512,512))
+    alpha=0.5,
+    resize=(512,512),
+    label_text_scale=0.02,
+    label_text_thick=1)
 log_processor = dict(by_epoch=False)
 log_level = 'INFO'
 load_from = None
