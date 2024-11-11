@@ -43,8 +43,8 @@ Compile  = True if not debug else False     # torch.dynamo
 workers  = 4 if not debug else 0            # DataLoader Worker
 
 # Totalsegmentator Dataset
-pre_crop_data_root = '/file1/mgam_datasets/CT_ORG/spacing1_crop64_ccm0.9_npz/'
-mha_data_root = '/file1/mgam_datasets/CT_ORG/spacing1_mha'
+pre_crop_data_root = '/file1/mgam_datasets/CT_ORG/spacing2_crop64_ccm0.9_npz/'
+mha_data_root = '/file1/mgam_datasets/CT_ORG/spacing2_mha'
 num_classes = 7
 val_sample_ratio = 0.1
 wl = None    # window loacation
@@ -66,7 +66,7 @@ use_checkpoint = False  # torch.checkpoint
 data_range = [-1024,3072]
 num_windows = 16
 num_rect = 32
-pmwp_lr_mult = 10
+pmwp_lr_mult = None
 rect_momentum = 0.99
 
 # 流程控制

@@ -43,8 +43,8 @@ Compile  = True if not debug else False     # torch.dynamo
 workers  = 4 if not debug else 0            # DataLoader Worker
 
 # Totalsegmentator Dataset
-pre_crop_data_root = '/file1/mgam_datasets/CT_ORG/spacing1_crop64_ccm0.9_npz/'
-mha_data_root = '/file1/mgam_datasets/CT_ORG/spacing1_mha'
+pre_crop_data_root = '/file1/mgam_datasets/CT_ORG/spacing2_crop64_ccm0.9_npz/'
+mha_data_root = '/file1/mgam_datasets/CT_ORG/spacing2_mha'
 num_classes = 6
 val_sample_ratio = 0.1
 wl = 100    # window loacation

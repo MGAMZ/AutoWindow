@@ -19,8 +19,8 @@ model = dict(
         num_rect=num_rect,
         rect_momentum=rect_momentum,
         data_range=data_range,
-        enable_VWP=True,
-        enable_CWF=True,
+        enable_VWP=False,
+        enable_CWF=False,
         lr_mult=pmwp_lr_mult,
     ),
     backbone = dict(
@@ -47,7 +47,7 @@ model = dict(
             type=DiceLoss_3D, 
             use_sigmoid=False, 
             ignore_1st_index=False, 
-            batch_z=4, 
+            batch_z=None, 
             # NOTE Severe performance overhead when not being set to None.
             # NOTE Prefer using `ignore_1st_index`.
             # NOTE Invalid Class (Defaults to the last class) has been masked out during preprocess.
