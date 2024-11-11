@@ -214,7 +214,6 @@ optim_wrapper = dict(
                    lr=lr,
                    weight_decay=1e-5),
     clip_grad=dict(max_norm=1,
-                   norm_type=2,
                    error_if_nonfinite=False),
     paramwise_cfg=dict(
         custom_keys={
