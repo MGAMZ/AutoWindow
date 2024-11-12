@@ -34,19 +34,19 @@ from mgamdata.models.AutoWindow import PackSeg3DInputs_AutoWindow, ParseLabelDis
 
 # --------------------PARAMETERS-------------------- #
 
-# Starting
-resume = True
-load_from = None
-load_optimizer = False
-load_param_scheduler = False
-
 # PyTorch
-debug    = True                            # 调试模式
+debug    = False                            # 调试模式
 use_AMP  = True                             # AMP加速
 dist     = False if not debug else False    # 多卡训练总控
 use_FSDP = False if not debug else False    # 多卡训练FSDP高级模式
 Compile  = True if not debug else False     # torch.dynamo
 workers  = 4 if not debug else 0            # DataLoader Worker
+
+# Starting
+resume = True
+load_from = None
+load_optimizer = False
+load_param_scheduler = False
 
 # Dataset
 pre_crop_data_root = '/file1/mgam_datasets/CT_ORG/spacing2_crop64_ccm0.9_npz/'
@@ -93,13 +93,10 @@ dynamic_intervals = [ # 动态验证间隔
     (2500, 5000) 
 ]
 
-
-
 # --------------------PARAMETERS-------------------- #
 # ////////////////////////////////////////////////// #
 # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ #
 # --------------------COMPONENTS-------------------- #
-
 
 # 数据读取与预处理管线
 meta_keys = (
