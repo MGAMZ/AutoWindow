@@ -48,7 +48,7 @@ model = dict(
             type=DiceLoss_3D, 
             use_sigmoid=False, 
             ignore_1st_index=False, 
-            batch_z=4, 
+            batch_z=16, 
             # NOTE Severe performance overhead when not being set to None.
             # NOTE Prefer using `ignore_1st_index`.
             # NOTE Invalid Class (Defaults to the last class) has been masked out during preprocess.

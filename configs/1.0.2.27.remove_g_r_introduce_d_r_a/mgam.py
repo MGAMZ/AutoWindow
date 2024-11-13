@@ -60,7 +60,7 @@ ww = None    # window width
 pad_val = -2000
 seg_pad_val = 0
 
-# 神经网络超参
+# Network Hyperparameters
 lr = 1e-4
 batch_size = 4 if not debug else 2
 grad_accumulation = 1 if not debug else 2
@@ -88,12 +88,12 @@ save_interval = 5000 if not debug else 2
 val_on_train = True
 val_interval = 100 if not debug else 2
 vis_interval = 20
-# dynamic_intervals = None
-dynamic_intervals = [ # 动态验证间隔
-    (5, 100), 
-    (150, 1000), 
-    (2500, 5000) 
-]
+dynamic_intervals = None
+# dynamic_intervals = [ # 动态验证间隔
+#     (5, 100), 
+#     (150, 1000), 
+#     (2500, 5000) 
+# ]
 
 # --------------------PARAMETERS-------------------- #
 # ////////////////////////////////////////////////// #
