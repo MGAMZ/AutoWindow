@@ -218,7 +218,7 @@ optim_wrapper = dict(
     accumulative_counts=grad_accumulation,
     optimizer=dict(type=AdamW,
                    lr=lr,
-                   weight_decay=1e-2),
+                   weight_decay=0),
     clip_grad=dict(max_norm=1,
                    norm_type=2,
                    error_if_nonfinite=False),
