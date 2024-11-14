@@ -300,10 +300,10 @@ env_cfg = dict(
     benchmark=True,
     allow_fp16_reduced_precision_reduction=True,
     allow_bf16_reduced_precision_reduction=True,
-    dynamo_cache_size=2,
+    dynamo_cache_size=8,
     dynamo_supress_errors=False,
-    dynamo_logging_level='ERROR',
-    torch_logging_level='ERROR',
+    dynamo_logging_level='WARNING',
+    torch_logging_level='WARNING',
 )
 
 vis_backends = [dict(type=LocalVisBackend), 
