@@ -60,8 +60,8 @@ seg_pad_val = 0
 
 # Neural Network Hyperparameters
 lr = 1e-4
-batch_size = 8 if not debug else 2
-grad_accumulation = 1 if not debug else 2
+batch_size = 4 if not debug else 2
+grad_accumulation = 2 if not debug else 2
 embed_dims = 16 if not debug else 8
 in_channels = 1
 size = (64,64,64)       # 单次前向处理的分辨率, 不限制推理
@@ -72,12 +72,12 @@ use_checkpoint = False  # torch.checkpoint
 data_range = [-1024,3072]
 num_windows = 16
 num_rect = 16
-pmwp_lr_mult = None
+pmwp_lr_mult = 1e-2
 TRec_rect_momentum = 0.999
-enable_WinE_loss = False
-enable_TRec = False
-enable_TRec_loss = False
-enable_CWF = False
+enable_WinE_loss = True
+enable_TRec = True
+enable_TRec_loss = True
+enable_CWF = True
 
 # Training Strategy
 iters = 500000 if not debug else 3
@@ -214,9 +214,9 @@ optim_wrapper = dict(
     optimizer=dict(type=AdamW,
                    lr=lr,
                    weight_decay=0),
-    # clip_grad=dict(max_norm=1,
-    #                norm_type=2,
-    #                error_if_nonfinite=False),
+    clip_grad=dict(max_norm=1,
+                   norm_type=2,
+                   error_if_nonfinite=False),
     # paramwise_cfg=dict(
     #     custom_keys=dict(
     #         pmwp=dict(

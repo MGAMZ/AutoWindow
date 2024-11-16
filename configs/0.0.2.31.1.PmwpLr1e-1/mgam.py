@@ -27,14 +27,14 @@ from mgamdata.process.GeneralPreProcess import WindowSet, TypeConvert, InstanceN
 from mgamdata.process.LoadBiomedicalData import LoadImageFromMHA, LoadMaskFromMHA, LoadSampleFromNpz
 from mgamdata.dataset.CT_ORG.mm_dataset import (CT_ORG_Mha, CT_ORG_Precrop_Npz)
 from mgamdata.dataset.base import ParseID
-from mgamdata.mm.mmseg_Dev3D import (
-    PackSeg3DInputs, Seg3DDataPreProcessor, Seg3DLocalVisualizer, Seg3DVisualizationHook,
-)
-
+from mgamdata.mm.mmseg_Dev3D import Seg3DDataPreProcessor, Seg3DLocalVisualizer, Seg3DVisualizationHook
+from mgamdata.models.AutoWindow import PackSeg3DInputs_AutoWindow, ParseLabelDistribution
 
 
 
 # --------------------PARAMETERS-------------------- #
+
+# PyTorch
 debug    = False                            # 调试模式
 use_AMP  = True                             # AMP加速
 dist     = False if not debug else False    # 多卡训练总控
@@ -42,17 +42,23 @@ use_FSDP = False if not debug else False    # 多卡训练FSDP高级模式
 Compile  = True if not debug else False     # torch.dynamo
 workers  = 4 if not debug else 0            # DataLoader Worker
 
-# Totalsegmentator Dataset
+# Starting
+resume = True
+load_from = None
+resume_optimizer = True
+resume_param_scheduler = True
+
+# Dataset
 pre_crop_data_root = '/file1/mgam_datasets/CT_ORG/spacing2_crop64_ccm0.9_npz/'
 mha_data_root = '/file1/mgam_datasets/CT_ORG/spacing2_mha'
-num_classes = 6
+num_classes = 7
 val_sample_ratio = 0.1
-wl = 100    # window loacation
-ww = 600    # window width
+wl = None    # window loacation
+ww = None    # window width
 pad_val = -2000
 seg_pad_val = 0
 
-# 神经网络超参
+# Neural Network Hyperparameters
 lr = 1e-4
 batch_size = 4 if not debug else 2
 grad_accumulation = 2 if not debug else 2
@@ -62,15 +68,19 @@ size = (64,64,64)       # 单次前向处理的分辨率, 不限制推理
 deep_supervision = True
 use_checkpoint = False  # torch.checkpoint
 
-# pmwp子网络超参
+# PMWP Sub-Network Hyperparameters
 data_range = [-1024,3072]
 num_windows = 16
-num_rect = 32
-pmwp_lr_mult = 10
-rect_momentum = 0.99
+num_rect = 16
+pmwp_lr_mult = 1e-1
+TRec_rect_momentum = 0.999
+enable_WinE_loss = True
+enable_TRec = True
+enable_TRec_loss = True
+enable_CWF = True
 
-# 流程控制
-iters = 1000000 if not debug else 3 # 100W when accumulation = 2
+# Training Strategy
+iters = 500000 if not debug else 3
 logger_interval = 50 if not debug else 1
 save_interval = 5000 if not debug else 2
 val_on_train = True
@@ -80,16 +90,13 @@ vis_interval = 20
 dynamic_intervals = [ # 动态验证间隔
     (5, 100), 
     (150, 1000), 
-    (2500, 5000)
+    (2500, 5000) 
 ]
-
-
 
 # --------------------PARAMETERS-------------------- #
 # ////////////////////////////////////////////////// #
 # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ #
 # --------------------COMPONENTS-------------------- #
-
 
 # 数据读取与预处理管线
 meta_keys = (
@@ -100,20 +107,22 @@ meta_keys = (
 train_pipeline = [
     dict(type=LoadSampleFromNpz, load_type=['img', 'anno']),
     dict(type=ParseID),
-    dict(type=WindowSet, location=wl, width=ww),
-    dict(type=InstanceNorm),
+    dict(type=ParseLabelDistribution),
+    # dict(type=WindowSet, location=wl, width=ww),
+    # dict(type=InstanceNorm),
     dict(type=TypeConvert),
-    dict(type=PackSeg3DInputs, meta_keys=meta_keys)
+    dict(type=PackSeg3DInputs_AutoWindow, meta_keys=meta_keys)
 ]
 
 val_pipeline = test_pipeline = [
     dict(type=LoadImageFromMHA),
     dict(type=ParseID),
-    dict(type=WindowSet, location=wl, width=ww),
-    dict(type=InstanceNorm),
+    # dict(type=ParseLabelDistribution),
+    # dict(type=WindowSet, location=wl, width=ww),
+    # dict(type=InstanceNorm),
     dict(type=LoadMaskFromMHA),
     dict(type=TypeConvert),
-    dict(type=PackSeg3DInputs, meta_keys=meta_keys)
+    dict(type=PackSeg3DInputs_AutoWindow, meta_keys=meta_keys)
 ]
 
 
@@ -138,7 +147,7 @@ train_dataloader = dict(
 val_dataloader = dict(
     batch_size=1,
     num_workers=workers//2,
-    pin_memory=True,
+    pin_memory=False,
     persistent_workers=True if workers > 0 else False,
     sampler=dict(
         type=RatioSampler, 
@@ -204,7 +213,7 @@ optim_wrapper = dict(
     accumulative_counts=grad_accumulation,
     optimizer=dict(type=AdamW,
                    lr=lr,
-                   weight_decay=1e-2),
+                   weight_decay=0),
     clip_grad=dict(max_norm=1,
                    norm_type=2,
                    error_if_nonfinite=False),
@@ -286,10 +295,10 @@ env_cfg = dict(
     benchmark=True,
     allow_fp16_reduced_precision_reduction=True,
     allow_bf16_reduced_precision_reduction=True,
-    dynamo_cache_size=2,
+    dynamo_cache_size=8,
     dynamo_supress_errors=False,
-    dynamo_logging_level='ERROR',
-    torch_logging_level='ERROR',
+    dynamo_logging_level='WARNING',
+    torch_logging_level='WARNING',
 )
 
 vis_backends = [dict(type=LocalVisBackend), 
@@ -304,7 +313,4 @@ visualizer = dict(
     label_text_thick=1)
 log_processor = dict(by_epoch=False)
 log_level = 'INFO'
-load_from = None
-resume = False
 tta_model = None
-resume=True
