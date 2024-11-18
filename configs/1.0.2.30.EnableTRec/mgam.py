@@ -28,23 +28,26 @@ from mgamdata.process.LoadBiomedicalData import LoadImageFromMHA, LoadMaskFromMH
 from mgamdata.dataset.Totalsegmentator.mm_dataset import (
     TotalsegmentatorSeg3DDataset, Tsd3D_PreCrop_Npz)
 from mgamdata.dataset.base import ParseID
-from mgamdata.mm.mmseg_Dev3D import (
-    PackSeg3DInputs, Seg3DDataPreProcessor, Seg3DLocalVisualizer, Seg3DVisualizationHook,
-)
+from mgamdata.mm.mmseg_Dev3D import Seg3DDataPreProcessor, Seg3DLocalVisualizer, Seg3DVisualizationHook
+from mgamdata.models.AutoWindow import PackSeg3DInputs_AutoWindow, ParseLabelDistribution
 
 
-resume = True
-resume_optimizer = False
-resume_param_scheduler = True
-load_from = "/fileser51/zhangyiqin.sx/mmseg/AutoWindow/work_dirs/1.0.2.18.AnalyzeBoomAfterMerge/iter_318000.pth"
 
 # --------------------PARAMETERS-------------------- #
+
+# PyTorch
 debug    = False                            # 调试模式
 use_AMP  = True                             # AMP加速
 dist     = True if not debug else False     # 多卡训练总控
 use_FSDP = False if not debug else False    # 多卡训练FSDP高级模式
-Compile  = False if not debug else False     # torch.dynamo
+Compile  = True if not debug else False     # torch.dynamo
 workers  = 4 if not debug else 0            # DataLoader Worker
+
+# Starting
+resume = False
+load_from = '/fileser51/zhangyiqin.sx/mmseg/AutoWindow/work_dirs/1.0.2.29.EnableCWF/best_Perf_mDice_iter_60000.pth'
+resume_optimizer = False
+resume_param_scheduler = False
 
 # Totalsegmentator Dataset
 pre_crop_data_root = '/home/zhangyq.sx/Totalsegmentator_Data/Totalsegmentator_dataset_v201/spacing2_crop64_ccm0.5_npz/'
@@ -57,7 +60,7 @@ ww = None    # window width
 pad_val = -2000
 seg_pad_val = 0
 
-# 神经网络超参
+# Network Hyperparameters
 lr = 1e-4
 batch_size = 4 if not debug else 2
 grad_accumulation = 1 if not debug else 2
@@ -67,17 +70,21 @@ size = (64,64,64)       # 单次前向处理的分辨率, 不限制推理
 deep_supervision = True
 use_checkpoint = False  # torch.checkpoint
 
-# pmwp子网络超参
+# PMWP Sub-Network Hyperparameters
 data_range = [-1024,3072]
 num_windows = 16
 num_rect = 32
-pmwp_lr_mult = 0.1
-rect_momentum = 0.99
+pmwp_lr_mult = None
+TRec_rect_momentum = 0.99
+enable_WinE_loss = True
+enable_TRec = True
+enable_TRec_loss = False
+enable_CWF = True
 
-# 流程控制
+# Training Strategy
 iters = 500000 if not debug else 3
 logger_interval = 200 if not debug else 1
-save_interval = 2000 if not debug else 2
+save_interval = 5000 if not debug else 2
 val_on_train = True
 val_interval = 100 if not debug else 2
 vis_interval = 20
@@ -85,16 +92,13 @@ vis_interval = 20
 dynamic_intervals = [ # 动态验证间隔
     (5, 100), 
     (150, 1000), 
-    (2500, 5000)
+    (2500, 5000) 
 ]
-
-
 
 # --------------------PARAMETERS-------------------- #
 # ////////////////////////////////////////////////// #
 # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ #
 # --------------------COMPONENTS-------------------- #
-
 
 # 数据读取与预处理管线
 meta_keys = (
@@ -105,20 +109,22 @@ meta_keys = (
 train_pipeline = [
     dict(type=LoadSampleFromNpz, load_type=['img', 'anno']),
     dict(type=ParseID),
+    dict(type=ParseLabelDistribution),
     # dict(type=WindowSet, location=wl, width=ww),
     # dict(type=InstanceNorm),
     dict(type=TypeConvert),
-    dict(type=PackSeg3DInputs, meta_keys=meta_keys)
+    dict(type=PackSeg3DInputs_AutoWindow, meta_keys=meta_keys)
 ]
 
 val_pipeline = test_pipeline = [
     dict(type=LoadImageFromMHA),
     dict(type=ParseID),
+    # dict(type=ParseLabelDistribution),
     # dict(type=WindowSet, location=wl, width=ww),
     # dict(type=InstanceNorm),
     dict(type=LoadMaskFromMHA),
     dict(type=TypeConvert),
-    dict(type=PackSeg3DInputs, meta_keys=meta_keys)
+    dict(type=PackSeg3DInputs_AutoWindow, meta_keys=meta_keys)
 ]
 
 
@@ -212,29 +218,15 @@ optim_wrapper = dict(
     accumulative_counts=grad_accumulation,
     optimizer=dict(type=AdamW,
                    lr=lr,
-                   weight_decay=1e-5),
+                   weight_decay=0),
     clip_grad=dict(max_norm=1,
+                   norm_type=2,
                    error_if_nonfinite=False),
-    paramwise_cfg=dict(
-        custom_keys={
-            'pmwp.window_extractor_0': dict(decay_mult=0, lr_mult=0),
-            'pmwp.window_extractor_1': dict(decay_mult=0, lr_mult=0),
-            'pmwp.window_extractor_2': dict(decay_mult=0, lr_mult=0),
-            'pmwp.window_extractor_3': dict(decay_mult=0, lr_mult=0),
-            'pmwp.window_extractor_4': dict(decay_mult=0, lr_mult=0),
-            'pmwp.window_extractor_5': dict(decay_mult=0, lr_mult=0),
-            'pmwp.window_extractor_6': dict(decay_mult=0, lr_mult=0),
-            'pmwp.window_extractor_7': dict(decay_mult=0, lr_mult=0),
-            'pmwp.window_extractor_8': dict(decay_mult=0, lr_mult=0),
-            'pmwp.window_extractor_9': dict(decay_mult=0, lr_mult=0),
-            'pmwp.window_extractor_10': dict(decay_mult=0, lr_mult=0),
-            'pmwp.window_extractor_11': dict(decay_mult=0, lr_mult=0),
-            'pmwp.window_extractor_12': dict(decay_mult=0, lr_mult=0),
-            'pmwp.window_extractor_13': dict(decay_mult=0, lr_mult=0),
-            'pmwp.window_extractor_14': dict(decay_mult=0, lr_mult=0),
-            'pmwp.window_extractor_15': dict(decay_mult=0, lr_mult=0),
-        }
-    ),
+    # paramwise_cfg=dict(
+    #     custom_keys=dict(
+    #         pmwp=dict(
+    #             decay_mult=0,
+    #             lr_mult=10))),
 )
 
 # 学习率调整策略
@@ -308,10 +300,10 @@ env_cfg = dict(
     benchmark=True,
     allow_fp16_reduced_precision_reduction=True,
     allow_bf16_reduced_precision_reduction=True,
-    dynamo_cache_size=2,
+    dynamo_cache_size=8,
     dynamo_supress_errors=False,
-    dynamo_logging_level='ERROR',
-    torch_logging_level='ERROR',
+    dynamo_logging_level='WARNING',
+    torch_logging_level='WARNING',
 )
 
 vis_backends = [dict(type=LocalVisBackend), 

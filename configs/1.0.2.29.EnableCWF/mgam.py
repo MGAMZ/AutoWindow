@@ -79,7 +79,7 @@ TRec_rect_momentum = 0.99
 enable_WinE_loss = True
 enable_TRec = False
 enable_TRec_loss = False
-enable_CWF = False
+enable_CWF = True
 
 # Training Strategy
 iters = 500000 if not debug else 3
