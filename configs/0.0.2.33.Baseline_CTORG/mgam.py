@@ -70,9 +70,9 @@ use_checkpoint = False  # torch.checkpoint
 
 # PMWP Sub-Network Hyperparameters
 data_range = [-1024,3072]
-num_windows = 16
+num_windows = 8
 num_rect = 16
-pmwp_lr_mult = 1e-2
+pmwp_lr_mult = 1e-4
 TRec_rect_momentum = 0.999
 enable_WinE_loss = True
 enable_TRec = True
