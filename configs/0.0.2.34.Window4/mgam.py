@@ -80,12 +80,12 @@ enable_TRec_loss = True
 enable_CWF = True
 
 # Training Strategy
-iters = 500000 if not debug else 3
-logger_interval = 50 if not debug else 1
+iters = 200000 if not debug else 3
+logger_interval = 100 if not debug else 1
 save_interval = 5000 if not debug else 2
 val_on_train = True
 val_interval = 100 if not debug else 2
-vis_interval = 20
+vis_interval = 100
 # dynamic_intervals = None
 dynamic_intervals = [ # 动态验证间隔
     (5, 100), 
