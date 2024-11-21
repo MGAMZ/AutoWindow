@@ -25,7 +25,7 @@ from mgamdata.mm.mmseg_PlugIn import IoUMetric_PerClass
 from mgamdata.mm.mmeng_PlugIn import RemasteredDDP, RemasteredFSDP, RatioSampler
 from mgamdata.process.GeneralPreProcess import WindowSet, TypeConvert, InstanceNorm
 from mgamdata.process.LoadBiomedicalData import LoadImageFromMHA, LoadMaskFromMHA, LoadSampleFromNpz
-from mgamdata.dataset.CT_ORG.mm_dataset import (CT_ORG_Mha, CT_ORG_Precrop_Npz)
+from mgamdata.dataset.ImageTBAD.mm_dataset import (TBAD_Mha, TBAD_Precrop_Npz)
 from mgamdata.dataset.base import ParseID
 from mgamdata.mm.mmseg_Dev3D import Seg3DDataPreProcessor, Seg3DLocalVisualizer, Seg3DVisualizationHook
 from mgamdata.models.AutoWindow import PackSeg3DInputs_AutoWindow, ParseLabelDistribution
@@ -49,8 +49,8 @@ resume_optimizer = True
 resume_param_scheduler = True
 
 # Dataset
-pre_crop_data_root = '/file1/mgam_datasets/CT_ORG/spacing2_crop64_ccm0.9_npz/'
-mha_data_root = '/file1/mgam_datasets/CT_ORG/spacing2_mha'
+pre_crop_data_root = '/file1/mgam_datasets/ImageTBAD/spacing2_crop64_ccm0.9_npz/'
+mha_data_root = '/file1/mgam_datasets/ImageTBAD/spacing2_mha'
 num_classes = 7
 val_sample_ratio = 0.1
 wl = None    # window loacation
@@ -70,7 +70,7 @@ use_checkpoint = False  # torch.checkpoint
 
 # PMWP Sub-Network Hyperparameters
 data_range = [-1024,3072]
-num_windows = 8
+num_windows = 4
 num_rect = 16
 pmwp_lr_mult = 1e-4
 TRec_rect_momentum = 0.999
@@ -81,11 +81,11 @@ enable_CWF = True
 
 # Training Strategy
 iters = 200000 if not debug else 3
-logger_interval = 50 if not debug else 1
+logger_interval = 100 if not debug else 1
 save_interval = 5000 if not debug else 2
 val_on_train = True
 val_interval = 100 if not debug else 2
-vis_interval = 20
+vis_interval = 100
 # dynamic_intervals = None
 dynamic_intervals = [ # 动态验证间隔
     (5, 100), 
@@ -136,7 +136,7 @@ train_dataloader = dict(
         type=InfiniteSampler, 
         shuffle=False if debug else True),
     dataset=dict(
-        type=CT_ORG_Precrop_Npz,
+        type=TBAD_Precrop_Npz,
         split='train',
         data_root_mha=mha_data_root,
         data_root=pre_crop_data_root,
@@ -154,7 +154,7 @@ val_dataloader = dict(
         shuffle=False, 
         use_sample_ratio=val_sample_ratio),
     dataset=dict(
-        type=CT_ORG_Mha,
+        type=TBAD_Mha,
         split='val',
         data_root_mha=mha_data_root,
         data_root=mha_data_root,
@@ -169,7 +169,7 @@ test_dataloader = dict(
     persistent_workers=True if workers > 0 else False,
     sampler=dict(type=DefaultSampler, shuffle=False),
     dataset=dict(
-        type=CT_ORG_Mha,
+        type=TBAD_Mha,
         split='test',
         data_root_mha=mha_data_root,
         data_root=mha_data_root,
