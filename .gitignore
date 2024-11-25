@@ -162,6 +162,8 @@ cython_debug/
 #.idea/
 
 totalsegmentator_examples/*
+work_dirs/*
+test_work_dirs/*
 .env
 .vscode
 work_dirs
