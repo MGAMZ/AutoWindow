@@ -32,7 +32,7 @@ model = dict(
     ),
     backbone = dict(
         type=MM_MedNext_Encoder,
-        in_channels=in_channels, # type: ignore
+        in_channels=in_channels * num_windows, # type: ignore
         embed_dims=embed_dims,
         kernel_size=3,
         dim="3d",
