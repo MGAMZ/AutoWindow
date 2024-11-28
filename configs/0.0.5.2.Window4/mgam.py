@@ -51,7 +51,7 @@ resume_param_scheduler = True
 # Dataset
 pre_crop_data_root = '/file1/mgam_datasets/KiTS23/spacing2_crop64_ccm0.9_npz/'
 mha_data_root = '/file1/mgam_datasets/KiTS23/spacing2_mha'
-num_classes = 6
+num_classes = 4
 val_sample_ratio = 0.1
 wl = None    # window loacation
 ww = None    # window width
