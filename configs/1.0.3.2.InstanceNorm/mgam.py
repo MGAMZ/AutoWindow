@@ -36,9 +36,9 @@ from mgamdata.models.AutoWindow import PackSeg3DInputs_AutoWindow, ParseLabelDis
 # --------------------PARAMETERS-------------------- #
 
 # PyTorch
-debug    = True                            # 调试模式
+debug    = False                            # 调试模式
 use_AMP  = True                             # AMP加速
-dist     = True if not debug else False     # 多卡训练总控
+dist     = False if not debug else False     # 多卡训练总控
 use_FSDP = False if not debug else False    # 多卡训练FSDP高级模式
 Compile  = True if not debug else False     # torch.dynamo
 workers  = 4 if not debug else 0            # DataLoader Worker
@@ -111,7 +111,7 @@ train_pipeline = [
     dict(type=ParseID),
     dict(type=ParseLabelDistribution),
     # dict(type=WindowSet, location=wl, width=ww),
-    # dict(type=InstanceNorm),
+    dict(type=InstanceNorm),
     dict(type=TypeConvert),
     dict(type=PackSeg3DInputs_AutoWindow, meta_keys=meta_keys)
 ]
@@ -121,7 +121,7 @@ val_pipeline = test_pipeline = [
     dict(type=ParseID),
     # dict(type=ParseLabelDistribution),
     # dict(type=WindowSet, location=wl, width=ww),
-    # dict(type=InstanceNorm),
+    dict(type=InstanceNorm),
     dict(type=LoadMaskFromMHA),
     dict(type=TypeConvert),
     dict(type=PackSeg3DInputs_AutoWindow, meta_keys=meta_keys)

@@ -3,30 +3,35 @@ with read_base():
     from .mgam import *
 
 from mgamdata.models.AutoWindow import (
-    AutoWindowSetting, ParalleledMultiWindowProcessing, AutoWindowStatusLoggerHook)
+    AutoWindowSetting, ParalleledMultiWindowProcessing, AutoWindowStatusLoggerHook, EncoderDecoder_3D)
 from mgamdata.models.MedNeXt import MM_MedNext_Encoder, MM_MedNext_Decoder_3D
 from mgamdata.mm.mmseg_Dev3D import DiceLoss_3D
 
+# custom_hooks = [
+#     dict(type=AutoWindowStatusLoggerHook, 
+#          dpi=100, interval=logger_interval),
+# ]
+
 # 神经网络设定
 model = dict(
-    type = AutoWindowSetting,
-    pmwp = dict(
-        type=ParalleledMultiWindowProcessing,
-        in_channels=in_channels,
-        embed_dims=embed_dims,
-        num_windows=num_windows,
-        num_rect=num_rect,
-        TRec_rect_momentum=TRec_rect_momentum,
-        data_range=data_range,
-        enable_WinE_loss=enable_WinE_loss,
-        enable_TRec=enable_TRec,
-        enable_TRec_loss=enable_TRec_loss,
-        enable_CWF=enable_CWF,
-        lr_mult=pmwp_lr_mult,
-    ),
+    type = EncoderDecoder_3D,
+    # pmwp = dict(
+    #     type=ParalleledMultiWindowProcessing,
+    #     in_channels=in_channels,
+    #     embed_dims=embed_dims,
+    #     num_windows=num_windows,
+    #     num_rect=num_rect,
+    #     TRec_rect_momentum=TRec_rect_momentum,
+    #     data_range=data_range,
+    #     enable_WinE_loss=enable_WinE_loss,
+    #     enable_TRec=enable_TRec,
+    #     enable_TRec_loss=enable_TRec_loss,
+    #     enable_CWF=enable_CWF,
+    #     lr_mult=pmwp_lr_mult,
+    # ),
     backbone = dict(
         type=MM_MedNext_Encoder,
-        in_channels=in_channels * num_windows, # type: ignore
+        in_channels=in_channels, # type: ignore
         embed_dims=embed_dims,
         kernel_size=3,
         dim="3d",
@@ -61,8 +66,3 @@ model = dict(
         stride=[i//2 for i in size], 
         slide_accumulate_device='cpu'), 
 )
-
-custom_hooks = [
-    dict(type=AutoWindowStatusLoggerHook, 
-         dpi=100, interval=logger_interval),
-]
