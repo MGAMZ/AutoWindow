@@ -109,7 +109,7 @@ train_pipeline = [
     dict(type=ParseID),
     dict(type=ParseLabelDistribution),
     # dict(type=WindowSet, location=wl, width=ww),
-    dict(type=InstanceNorm),
+    # dict(type=InstanceNorm),
     dict(type=TypeConvert),
     dict(type=PackSeg3DInputs_AutoWindow, meta_keys=meta_keys)
 ]
@@ -119,7 +119,7 @@ val_pipeline = test_pipeline = [
     dict(type=ParseID),
     # dict(type=ParseLabelDistribution),
     # dict(type=WindowSet, location=wl, width=ww),
-    dict(type=InstanceNorm),
+    # dict(type=InstanceNorm),
     dict(type=LoadMaskFromMHA),
     dict(type=TypeConvert),
     dict(type=PackSeg3DInputs_AutoWindow, meta_keys=meta_keys)
