@@ -53,8 +53,8 @@ pre_crop_data_root = '/file1/mgam_datasets/KiTS23/spacing2_crop64_ccm0.9_npz/'
 mha_data_root = '/file1/mgam_datasets/KiTS23/spacing2_mha'
 num_classes = 4
 val_sample_ratio = 0.1
-wl = None    # window loacation
-ww = None    # window width
+wl = 20     # window loacation
+ww = 400    # window width
 pad_val = -2000
 seg_pad_val = 0
 
@@ -70,7 +70,7 @@ use_checkpoint = False  # torch.checkpoint
 
 # PMWP Sub-Network Hyperparameters
 data_range = [-1024,3072]
-num_windows = 4
+num_windows = 8
 num_rect = 16
 pmwp_lr_mult = 1e-4
 TRec_rect_momentum = 0.999
@@ -108,7 +108,7 @@ train_pipeline = [
     dict(type=LoadSampleFromNpz, load_type=['img', 'anno']),
     dict(type=ParseID),
     dict(type=ParseLabelDistribution),
-    # dict(type=WindowSet, location=wl, width=ww),
+    dict(type=WindowSet, location=wl, width=ww),
     # dict(type=InstanceNorm),
     dict(type=TypeConvert),
     dict(type=PackSeg3DInputs_AutoWindow, meta_keys=meta_keys)
@@ -118,7 +118,7 @@ val_pipeline = test_pipeline = [
     dict(type=LoadImageFromMHA),
     dict(type=ParseID),
     # dict(type=ParseLabelDistribution),
-    # dict(type=WindowSet, location=wl, width=ww),
+    dict(type=WindowSet, location=wl, width=ww),
     # dict(type=InstanceNorm),
     dict(type=LoadMaskFromMHA),
     dict(type=TypeConvert),
