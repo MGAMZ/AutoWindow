@@ -25,7 +25,7 @@ from mgamdata.mm.mmseg_PlugIn import IoUMetric_PerClass
 from mgamdata.mm.mmeng_PlugIn import RemasteredDDP, RemasteredFSDP, RatioSampler
 from mgamdata.process.GeneralPreProcess import WindowSet, TypeConvert, InstanceNorm
 from mgamdata.process.LoadBiomedicalData import LoadImageFromMHA, LoadMaskFromMHA, LoadSampleFromNpz
-from mgamdata.dataset.KiTS23.mm_dataset import (KiTS23_Mha, KiTS23_Precrop_Npz)
+from mgamdata.dataset.AbdomenCT_1K.mm_dataset import (AbdomenCT_1K_Sup_Mha, AbdomenCT_1K_Precrop_Npz)
 from mgamdata.dataset.base import ParseID
 from mgamdata.mm.mmseg_Dev3D import Seg3DDataPreProcessor, Seg3DLocalVisualizer, Seg3DVisualizationHook
 from mgamdata.models.AutoWindow import PackSeg3DInputs_AutoWindow, ParseLabelDistribution
@@ -49,12 +49,12 @@ resume_optimizer = True
 resume_param_scheduler = True
 
 # Dataset
-pre_crop_data_root = '/file1/mgam_datasets/KiTS23/spacing2_crop64_ccm0.9_npz/'
-mha_data_root = '/file1/mgam_datasets/KiTS23/spacing2_mha'
-num_classes = 4
+pre_crop_data_root = '/file1/mgam_datasets/AbdomenCT_1K/spacing2_crop64_ccm0.9_npz/'
+mha_data_root = '/file1/mgam_datasets/AbdomenCT_1K/spacing2_mha'
+num_classes = 5
 val_sample_ratio = 0.1
-wl = None    # window loacation
-ww = None    # window width
+wl = 40     # window loacation
+ww = 400    # window width
 pad_val = -2000
 seg_pad_val = 0
 
@@ -108,7 +108,7 @@ train_pipeline = [
     dict(type=LoadSampleFromNpz, load_type=['img', 'anno']),
     dict(type=ParseID),
     dict(type=ParseLabelDistribution),
-    # dict(type=WindowSet, location=wl, width=ww),
+    dict(type=WindowSet, location=wl, width=ww),
     # dict(type=InstanceNorm),
     dict(type=TypeConvert),
     dict(type=PackSeg3DInputs_AutoWindow, meta_keys=meta_keys)
@@ -118,7 +118,7 @@ val_pipeline = test_pipeline = [
     dict(type=LoadImageFromMHA),
     dict(type=ParseID),
     # dict(type=ParseLabelDistribution),
-    # dict(type=WindowSet, location=wl, width=ww),
+    dict(type=WindowSet, location=wl, width=ww),
     # dict(type=InstanceNorm),
     dict(type=LoadMaskFromMHA),
     dict(type=TypeConvert),
@@ -136,8 +136,9 @@ train_dataloader = dict(
         type=InfiniteSampler, 
         shuffle=False if debug else True),
     dataset=dict(
-        type=KiTS23_Precrop_Npz,
+        type=AbdomenCT_1K_Precrop_Npz,
         split='train',
+        mode='sup',
         data_root_mha=mha_data_root,
         data_root=pre_crop_data_root,
         pipeline=train_pipeline,
@@ -154,7 +155,7 @@ val_dataloader = dict(
         shuffle=False, 
         use_sample_ratio=val_sample_ratio),
     dataset=dict(
-        type=KiTS23_Mha,
+        type=AbdomenCT_1K_Sup_Mha,
         split='val',
         data_root_mha=mha_data_root,
         data_root=mha_data_root,
@@ -169,7 +170,7 @@ test_dataloader = dict(
     persistent_workers=True if workers > 0 else False,
     sampler=dict(type=DefaultSampler, shuffle=False),
     dataset=dict(
-        type=KiTS23_Mha,
+        type=AbdomenCT_1K_Sup_Mha,
         split='test',
         data_root_mha=mha_data_root,
         data_root=mha_data_root,
