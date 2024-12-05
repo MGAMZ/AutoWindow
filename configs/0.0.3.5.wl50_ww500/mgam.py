@@ -55,7 +55,7 @@ num_classes = 4
 val_sample_ratio = 0.1
 wl = 50     # window loacation
 ww = 500    # window width
-pad_val = -2000
+pad_val = 0
 seg_pad_val = 0
 
 # Neural Network Hyperparameters
