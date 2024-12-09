@@ -7,11 +7,6 @@ from mgamdata.models.AutoWindow import (
 from mgamdata.models.MedNeXt import MM_MedNext_Encoder, MM_MedNext_Decoder_3D
 from mgamdata.mm.mmseg_Dev3D import DiceLoss_3D
 
-custom_hooks = [
-    dict(type=AutoWindowStatusLoggerHook, 
-         dpi=100, interval=logger_interval),
-]
-
 # 神经网络设定
 model = dict(
     type = EncoderDecoder_3D,
