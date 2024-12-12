@@ -9,6 +9,7 @@ import numpy as np
 
 from mgamdata.mm.inference import Inferencer
 from mgamdata.mm.mmseg_Dev3D import EncoderDecoder_3D
+from mgamdata.models.AutoWindow import AutoWindowSetting
 
 
 
@@ -24,7 +25,7 @@ class Inferencer_3D(Inferencer):
     @torch.inference_mode()
     def Inference_FromNDArray(self, image_array:np.ndarray) -> torch.Tensor:
         inputs = torch.from_numpy(image_array).to(dtype=torch.float32, device='cuda')
-        model: EncoderDecoder_3D = self.model
+        model: AutoWindowSetting = self.model
         image_meta = [{
             'ori_shape': image_array.shape,
             'img_shape': image_array.shape,
