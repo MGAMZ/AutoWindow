@@ -1,6 +1,7 @@
 import os
 import pdb
 import math
+from tkinter import Image
 
 from cv2 import exp
 import torch
@@ -13,7 +14,6 @@ from sklearn.metrics import confusion_matrix
 
 from inference import Inferencer_3D
 from mgamdata.models.AutoWindow import AutoWindowSetting
-from mgamdata.dataset.AbdomenCT_1K.meta import CLASS_INDEX_MAP  # {name: index}
 
 
 CMAP_COLOR = ["#50b2cd", "#c490c4"]
@@ -77,7 +77,6 @@ def draw_crsf_resp(
     inputs: np.ndarray, crsf_resp: np.ndarray, num_windows: int, save_path: str
 ):
     crsf_resp = np.stack(np.split(crsf_resp, num_windows, axis=0)).squeeze()
-    inputs, crsf_resp = np.flip(inputs, axis=2), np.flip(crsf_resp, axis=2)
     inputs = inputs[:, inputs.shape[1] // 2]  # [win, Y, X]
     crsf_resp = crsf_resp[:, crsf_resp.shape[1] // 2]  # [win, Y, X]
 
@@ -115,7 +114,9 @@ def draw_crsf_resp(
     plt.close(fig)
 
 
-def draw_confusion_matrix(gt: np.ndarray, pred: np.ndarray, save_path: str):
+def draw_confusion_matrix(
+    gt: np.ndarray, pred: np.ndarray, class_idx_map: dict, save_path: str
+):
     """
     Args:
         gt (np.ndarray): size (Z, Y, X)
@@ -141,7 +142,7 @@ def draw_confusion_matrix(gt: np.ndarray, pred: np.ndarray, save_path: str):
     ax.set_ylabel("True Label")
     # 设置刻度和标签
     ticks = [
-        {v: k for k, v in CLASS_INDEX_MAP.items()}[idx]
+        {v: k for k, v in class_idx_map.items()}[idx]
         for idx in np.union1d(np.unique(gt), np.unique(pred))
     ]
     ax.set_xticks(np.arange(len(ticks)))
@@ -169,9 +170,19 @@ def draw_confusion_matrix(gt: np.ndarray, pred: np.ndarray, save_path: str):
     plt.close(fig)
 
 
-def analyze_one_exp(config_path, ckpt_path, itk_image_path, inst_norm: bool, manual_win: bool, invert_y:bool=False):
+def analyze_one_exp(
+    config_path: str,
+    ckpt_path: str,
+    class_idx_map: dict,
+    itk_image_path: str,
+    itk_mask_path: str,
+    save_root:str, 
+    inst_norm: bool,
+    manual_win: bool,
+    invert_y: bool = False,
+    invert_channel: bool = False,
+):
     exp_name = os.path.basename(os.path.dirname(config_path))
-    itk_mask_path = itk_image_path.replace("image", "label")
 
     itk_image = sitk.ReadImage(itk_image_path)
     gt_image = sitk.ReadImage(itk_mask_path)
@@ -216,99 +227,142 @@ def analyze_one_exp(config_path, ckpt_path, itk_image_path, inst_norm: bool, man
     print("Inference Done.")
 
     wine_resps = np.stack(wine_resps) if len(wine_resps) > 0 else None
+    if invert_channel:
+        image_array = image_array.transpose(2,1,0)
+        gt_array = gt_array.transpose(2,1,0)
+        pred_array = pred_array.transpose(2,1,0)
+        wine_resps = wine_resps.transpose(0,3,2,1) if wine_resps is not None else None
+        
     if invert_y:
         image_array = image_array[..., ::-1, :]
         wine_resps = wine_resps[..., ::-1, :] if wine_resps is not None else None
+        gt_array = gt_array[..., ::-1, :]
+        pred_array = pred_array[..., ::-1]
+    
     if wine_resps is not None:
         draw_combined_WinE_resp(
             image_array,
             wine_resps,
-            f"/mnt/d/微云同步助手/312065559/微云同步/mgam_writing/AutoWindow/Figures/combined_wine/combined_wine_{exp_name}.png",
+            os.path.join(save_root, "combined_wine", f"combined_wine_{exp_name}.png"),
         )
         draw_crsf_resp(
             all_window.cpu().numpy(),
             crsf_resp,
             num_windows,
-            f"/mnt/d/微云同步助手/312065559/微云同步/mgam_writing/AutoWindow/Figures/crsf_resp/crsf_resp_{exp_name}.png",
+            os.path.join(save_root, "crsf_resp", f"crsf_resp_{exp_name}.png"),
         )
     draw_confusion_matrix(
         gt_array,
         pred_array,
-        f"/mnt/d/微云同步助手/312065559/微云同步/mgam_writing/AutoWindow/Figures/cm/cm_{exp_name}.png",
+        class_idx_map,
+        os.path.join(save_root, "cm", f"cm_{exp_name}.png"),
     )
 
     print("Drown.")
 
 
 if __name__ == "__main__":
+    from mgamdata.dataset.AbdomenCT_1K.meta import (
+        CLASS_INDEX_MAP as AbdomenCT1K_Map,
+    )  # {name: index}
+    from mgamdata.dataset.KiTS23.meta import CLASS_INDEX_MAP as KiTS23_Map
+    from mgamdata.dataset.ImageTBAD.meta import CLASS_INDEX_MAP as ImageTBAD_Map
+
     # AbdomenCT_1K
     analyze_one_exp(
-        config_path="/file1/mgam_projects/AutoWindow/configs/0.0.6.0.InstanceNorm_AbdomenCT_1K/MedNeXt.py", 
-        ckpt_path="/file1/mgam_projects/AutoWindow/work_dirs/0.0.6.0.InstanceNorm_AbdomenCT_1K/MedNeXt/iter_200000.pth", 
+        config_path="/file1/mgam_projects/AutoWindow/configs/0.0.6.0.InstanceNorm_AbdomenCT_1K/MedNeXt.py",
+        ckpt_path="/file1/mgam_projects/AutoWindow/work_dirs/0.0.6.0.InstanceNorm_AbdomenCT_1K/MedNeXt/iter_200000.pth",
+        class_idx_map=AbdomenCT1K_Map,
         itk_image_path="/file1/mgam_datasets/AbdomenCT_1K/spacing2_mha/image/01062.mha",
+        itk_mask_path="/file1/mgam_datasets/AbdomenCT_1K/spacing2_mha/label/01062.mha",
+        save_root="/mnt/d/微云同步助手/312065559/微云同步/mgam_writing/AutoWindow/Figures", 
         inst_norm=True,
         manual_win=False,
         invert_y=True,
     )
     analyze_one_exp(
-        config_path="/file1/mgam_projects/AutoWindow/configs/0.0.6.2.Window4/MedNeXt.py", 
-        ckpt_path="/file1/mgam_projects/AutoWindow/work_dirs/0.0.6.2.Window4/MedNeXt/best_Perf_mDice_iter_155000.pth", 
+        config_path="/file1/mgam_projects/AutoWindow/configs/0.0.6.2.Window4/MedNeXt.py",
+        ckpt_path="/file1/mgam_projects/AutoWindow/work_dirs/0.0.6.2.Window4/MedNeXt/best_Perf_mDice_iter_155000.pth",
+        class_idx_map=AbdomenCT1K_Map,
         itk_image_path="/file1/mgam_datasets/AbdomenCT_1K/spacing2_mha/image/01062.mha",
+        itk_mask_path="/file1/mgam_datasets/AbdomenCT_1K/spacing2_mha/label/01062.mha",
+        save_root="/mnt/d/微云同步助手/312065559/微云同步/mgam_writing/AutoWindow/Figures",
         inst_norm=False,
         manual_win=False,
         invert_y=True,
     )
     analyze_one_exp(
-        config_path="/file1/mgam_projects/AutoWindow/configs/0.0.6.3.Window8/MedNeXt.py", 
-        ckpt_path="/file1/mgam_projects/AutoWindow/work_dirs/0.0.6.3.Window8/MedNeXt/best_Perf_mDice_iter_175000.pth", 
+        config_path="/file1/mgam_projects/AutoWindow/configs/0.0.6.3.Window8/MedNeXt.py",
+        ckpt_path="/file1/mgam_projects/AutoWindow/work_dirs/0.0.6.3.Window8/MedNeXt/best_Perf_mDice_iter_175000.pth",
+        class_idx_map=AbdomenCT1K_Map,
         itk_image_path="/file1/mgam_datasets/AbdomenCT_1K/spacing2_mha/image/01062.mha",
+        itk_mask_path="/file1/mgam_datasets/AbdomenCT_1K/spacing2_mha/label/01062.mha",
+        save_root="/mnt/d/微云同步助手/312065559/微云同步/mgam_writing/AutoWindow/Figures",
         inst_norm=False,
         manual_win=False,
         invert_y=True,
     )
-    
+
     # KiTS23
     analyze_one_exp(
-        config_path="/file1/mgam_projects/AutoWindow/configs/0.0.5.0.InstanceNorm_kits23/MedNeXt.py", 
-        ckpt_path="/file1/mgam_projects/AutoWindow/work_dirs/0.0.5.0.InstanceNorm_kits23/MedNeXt/iter_200000.pth", 
+        config_path="/file1/mgam_projects/AutoWindow/configs/0.0.5.0.InstanceNorm_kits23/MedNeXt.py",
+        ckpt_path="/file1/mgam_projects/AutoWindow/work_dirs/0.0.5.0.InstanceNorm_kits23/MedNeXt/iter_200000.pth",
+        class_idx_map=KiTS23_Map,
         itk_image_path="/file1/mgam_datasets/KiTS23/spacing2_mha/image/00523.mha",
+        itk_mask_path="/file1/mgam_datasets/KiTS23/spacing2_mha/label/00523.mha",
+        save_root="/mnt/d/微云同步助手/312065559/微云同步/mgam_writing/AutoWindow/Figures",
         inst_norm=True,
         manual_win=False,
     )
     analyze_one_exp(
-        config_path="/file1/mgam_projects/AutoWindow/configs/0.0.5.2.Window4/MedNeXt.py", 
-        ckpt_path="/file1/mgam_projects/AutoWindow/work_dirs/0.0.5.2.Window4/MedNeXt/best_Perf_mDice_iter_175000.pth", 
+        config_path="/file1/mgam_projects/AutoWindow/configs/0.0.5.2.Window4/MedNeXt.py",
+        ckpt_path="/file1/mgam_projects/AutoWindow/work_dirs/0.0.5.2.Window4/MedNeXt/best_Perf_mDice_iter_175000.pth",
+        class_idx_map=KiTS23_Map,
         itk_image_path="/file1/mgam_datasets/KiTS23/spacing2_mha/image/00523.mha",
+        itk_mask_path="/file1/mgam_datasets/KiTS23/spacing2_mha/label/00523.mha",
+        save_root="/mnt/d/微云同步助手/312065559/微云同步/mgam_writing/AutoWindow/Figures",
         inst_norm=False,
         manual_win=False,
     )
     analyze_one_exp(
-        config_path="/file1/mgam_projects/AutoWindow/configs/0.0.5.3.Window8/MedNeXt.py", 
-        ckpt_path="/file1/mgam_projects/AutoWindow/work_dirs/0.0.5.3.Window8/MedNeXt/best_Perf_mDice_iter_90000.pth", 
+        config_path="/file1/mgam_projects/AutoWindow/configs/0.0.5.3.Window8/MedNeXt.py",
+        ckpt_path="/file1/mgam_projects/AutoWindow/work_dirs/0.0.5.3.Window8/MedNeXt/best_Perf_mDice_iter_90000.pth",
+        class_idx_map=KiTS23_Map,
         itk_image_path="/file1/mgam_datasets/KiTS23/spacing2_mha/image/00523.mha",
+        itk_mask_path="/file1/mgam_datasets/KiTS23/spacing2_mha/label/00523.mha",
+        save_root="/mnt/d/微云同步助手/312065559/微云同步/mgam_writing/AutoWindow/Figures",
         inst_norm=False,
         manual_win=False,
     )
 
     # ImageTBAD
     analyze_one_exp(
-        config_path="/file1/mgam_projects/AutoWindow/configs/0.0.3.3.InstanceNorm/MedNeXt.py", 
-        ckpt_path="/file1/mgam_projects/AutoWindow/work_dirs/0.0.3.3.InstanceNorm/MedNeXt/iter_200000.pth", 
+        config_path="/file1/mgam_projects/AutoWindow/configs/0.0.3.3.InstanceNorm/MedNeXt.py",
+        ckpt_path="/file1/mgam_projects/AutoWindow/work_dirs/0.0.3.3.InstanceNorm/MedNeXt/iter_200000.pth",
+        class_idx_map=ImageTBAD_Map,
         itk_image_path="/file1/mgam_datasets/ImageTBAD/spacing2_mha/image/180.mha",
+        itk_mask_path="/file1/mgam_datasets/KiTS23/spacing2_mha/label/00523.mha",
+        save_root="/mnt/d/微云同步助手/312065559/微云同步/mgam_writing/AutoWindow/Figures",
         inst_norm=True,
         manual_win=False,
     )
     analyze_one_exp(
-        config_path="/file1/mgam_projects/AutoWindow/configs/0.0.3.0.Window4_ImageTBAD/MedNeXt.py", 
-        ckpt_path="/file1/mgam_projects/AutoWindow/work_dirs/0.0.3.0.Window4_ImageTBAD/MedNeXt/best_Perf_mDice_iter_135000.pth", 
+        config_path="/file1/mgam_projects/AutoWindow/configs/0.0.3.0.Window4_ImageTBAD/MedNeXt.py",
+        ckpt_path="/file1/mgam_projects/AutoWindow/work_dirs/0.0.3.0.Window4_ImageTBAD/MedNeXt/best_Perf_mDice_iter_135000.pth",
+        class_idx_map=ImageTBAD_Map,
         itk_image_path="/file1/mgam_datasets/ImageTBAD/spacing2_mha/image/180.mha",
+        itk_mask_path="/file1/mgam_datasets/KiTS23/spacing2_mha/label/00523.mha",
+        save_root="/mnt/d/微云同步助手/312065559/微云同步/mgam_writing/AutoWindow/Figures",
         inst_norm=False,
         manual_win=False,
     )
     analyze_one_exp(
-        config_path="/file1/mgam_projects/AutoWindow/configs/0.0.3.1.Window8/MedNeXt.py", 
-        ckpt_path="/file1/mgam_projects/AutoWindow/work_dirs/0.0.3.1.Window8/MedNeXt/best_Perf_mDice_iter_130000.pth", 
+        config_path="/file1/mgam_projects/AutoWindow/configs/0.0.3.1.Window8/MedNeXt.py",
+        ckpt_path="/file1/mgam_projects/AutoWindow/work_dirs/0.0.3.1.Window8/MedNeXt/best_Perf_mDice_iter_130000.pth",
+        class_idx_map=ImageTBAD_Map,
         itk_image_path="/file1/mgam_datasets/ImageTBAD/spacing2_mha/image/180.mha",
+        itk_mask_path="/file1/mgam_datasets/KiTS23/spacing2_mha/label/00523.mha",
+        save_root="/mnt/d/微云同步助手/312065559/微云同步/mgam_writing/AutoWindow/Figures",
         inst_norm=False,
         manual_win=False,
     )
