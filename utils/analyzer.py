@@ -18,7 +18,7 @@ from mgamdata.models.AutoWindow import AutoWindowSetting
 
 
 CMAP_COLOR = ["#50b2cd", "#c490c4"]
-CMAP_SEQ_COLOR = ["spring", "RdPu"]
+CMAP_SEQ_COLOR = ["winter", "RdPu"]
 
 
 def draw_combined_WinE_resp(ori: np.ndarray, resps: np.ndarray, save_path: str):
@@ -30,10 +30,18 @@ def draw_combined_WinE_resp(ori: np.ndarray, resps: np.ndarray, save_path: str):
         rows, cols, figsize=(3.5 * cols, 4), gridspec_kw={"height_ratios": [1, 0.2]}
     )
 
+    def get_vmin_vmax(img):
+        sorted_pixels = np.sort(img.flatten())
+        sorted_pixels_unique = np.sort(np.unique(img))
+        vmin = sorted_pixels[int(0.05 * len(sorted_pixels))]
+        vmax = sorted_pixels[int(0.995 * len(sorted_pixels))]
+        return vmin, vmax
+
     # 绘制原始图像
     img_ori = ori[len(ori) // 2]
+    vmin, vmax = get_vmin_vmax(img_ori)
     ax_img_ori = axes[0, 0]
-    img_display = ax_img_ori.imshow(img_ori, cmap="gray")
+    img_display = ax_img_ori.imshow(img_ori, cmap="gray", vmin=vmin, vmax=vmax)
     ax_img_ori.set_title("Original")
     ax_img_ori.axis("off")
     fig.colorbar(img_display, ax=ax_img_ori, orientation="vertical")
@@ -41,6 +49,8 @@ def draw_combined_WinE_resp(ori: np.ndarray, resps: np.ndarray, save_path: str):
     # 绘制原始直方图
     ax_hist_ori = axes[1, 0]
     ax_hist_ori.hist(ori.flatten(), bins=100, color=CMAP_COLOR[1], alpha=0.7)
+    ax_hist_ori.axvline(vmin, color='k', linestyle='dashed', linewidth=1)
+    ax_hist_ori.axvline(vmax, color='k', linestyle='dashed', linewidth=1)
     ax_hist_ori.set_xlabel("Hounsfield Units")
     ax_hist_ori.set_ylabel("Frequency")
     ax_hist_ori.set_yscale("symlog")
@@ -48,11 +58,17 @@ def draw_combined_WinE_resp(ori: np.ndarray, resps: np.ndarray, save_path: str):
     ax_hist_ori.yaxis.set_major_locator(MaxNLocator(nbins=3))
 
     # 绘制响应图像和直方图
-    for i, resp in enumerate(resps):
+    for i, resp in tqdm(
+        enumerate(resps),
+        desc="Drawing Combined WinE Resp",
+        dynamic_ncols=True,
+        leave=False,
+    ):
         # 图像
         img = resp[len(resp) // 2]
+        vmin, vmax = get_vmin_vmax(img)
         ax_img = axes[0, i + 1]
-        img_display = ax_img.imshow(img, cmap="gray")
+        img_display = ax_img.imshow(img, cmap="gray", vmin=vmin, vmax=vmax)
         ax_img.set_title(f"Auto Window {i+1}")
         ax_img.axis("off")
         fig.colorbar(img_display, ax=ax_img, orientation="vertical")
@@ -60,6 +76,8 @@ def draw_combined_WinE_resp(ori: np.ndarray, resps: np.ndarray, save_path: str):
         # 直方图
         ax_hist = axes[1, i + 1]
         ax_hist.hist(resp.flatten(), bins=100, color=CMAP_COLOR[0], alpha=0.7)
+        ax_hist.axvline(vmin, color='k', linestyle='dashed', linewidth=1)
+        ax_hist.axvline(vmax, color='k', linestyle='dashed', linewidth=1)
         ax_hist.set_xlabel("Response")
         ax_hist.set_xlim(-1.8, 1.0)
         ax_hist.set_ylim(10e2, 10e6)
@@ -67,10 +85,7 @@ def draw_combined_WinE_resp(ori: np.ndarray, resps: np.ndarray, save_path: str):
         ax_hist.yaxis.set_major_locator(MaxNLocator(nbins=3))
 
     fig.tight_layout()
-    fig.savefig(
-        save_path,
-        dpi=300,
-    )
+    fig.savefig(save_path, dpi=300)
     plt.close(fig)
 
 
@@ -87,7 +102,9 @@ def draw_crsf_resp(
 
     fig, axes = plt.subplots(2, num_windows, figsize=(3 * num_windows, 4))
 
-    for i in range(num_windows):
+    for i in tqdm(
+        range(num_windows), desc="Drawing CrsF Resp", dynamic_ncols=True, leave=False
+    ):
         # 绘制 inputs
         ax_input = axes[0, i]
         ax_input.hist(inputs[i].flatten(), bins=200, color=CMAP_COLOR[1], alpha=0.7)
@@ -237,24 +254,28 @@ def draw_HU_violinplot(
     index_class_map = {v: k for k, v in class_index_map.items()}
     num_subwins = sub_win.shape[0]
     unique_classes = sorted(np.unique(pred_array))[1:]
-    colors = plt.cm.spring(np.linspace(0, 1, len(unique_classes)))
-    
     num_rows = num_subwins  # 每个子图一行
     num_cols = 1  # 只有一列
-    
+    color = eval(f"plt.cm.{CMAP_SEQ_COLOR[0]}")(np.linspace(0, 1, len(unique_classes)))
+
     # 增加右侧空间以放置标题
-    fig = plt.figure(figsize=(12, 1.2*num_rows))
-    
+    fig = plt.figure(figsize=(12, 1.2 * num_rows))
+
     # 创建子图列表
     axes = []
-    for i in range(num_subwins):
+    for i in tqdm(
+        range(num_subwins),
+        desc="Drawing HU Violin Plot",
+        dynamic_ncols=True,
+        leave=False,
+    ):
         ax = plt.subplot2grid((num_rows, num_cols), (i, 0))
         axes.append(ax)
-        
+
         plot_data = []
         positions = []
         labels = []
-        
+
         # 收集每个类别的数据
         for j, cls in enumerate(unique_classes):
             mask = pred_array == cls
@@ -263,43 +284,50 @@ def draw_HU_violinplot(
                 plot_data.append(values)
                 positions.append(j)
                 labels.append(index_class_map[cls])
-        
+
         # 绘制小提琴图
-        parts = ax.violinplot(plot_data, positions=positions, widths=0.8)
-        
+        try:
+            parts = ax.violinplot(plot_data, positions=positions, widths=0.8)
+        except Exception as e:
+            print(f"Error in subwin {i}: {e}")
+            return
+
         # 设置每个violin的颜色
-        for j, pc in enumerate(parts['bodies']):
-            pc.set_facecolor(colors[j])
+        for j, pc in enumerate(parts["bodies"]):
+            pc.set_facecolor(color[j])
             pc.set_alpha(0.7)
-        
+
         # 设置区间线的颜色
-        for partname in ['cbars', 'cmins', 'cmaxes']:
+        for partname in ["cbars", "cmins", "cmaxes"]:
             if partname in parts:
                 vp = parts[partname]
                 vp.set_edgecolor(CMAP_COLOR[0])
                 vp.set_linewidth(1)
                 vp.set_alpha(0.3)
-        
-        # 移除原有标题设置
-        # ax.set_title(f'Auto Window {i}')
-        
+
         # 在右侧添加垂直标题
-        ax.text(1.02, 0.5, f'A.Win. {i}', 
-                rotation=90,
-                transform=ax.transAxes,
-                verticalalignment='center')
-        
-        ax.grid(True, axis='y')
+        ax.text(
+            1.02,
+            0.5,
+            f"A.Win. {i}",
+            rotation=90,
+            transform=ax.transAxes,
+            verticalalignment="center",
+        )
+
+        ax.grid(True, axis="y")
         if i == num_subwins - 1:
             ax.set_xticks(range(len(unique_classes)))
-            ax.set_xticklabels([index_class_map[cls] for cls in unique_classes], rotation=90)
+            ax.set_xticklabels(
+                [index_class_map[cls] for cls in unique_classes], rotation=90
+            )
         else:
             ax.set_xticks([])
-        ax.set_ylabel('Response')
-    
+        ax.set_ylabel("Response")
+
     # 调整布局并保存，右侧留出更多空间放置标题
     plt.tight_layout(rect=[0, 0, 0.95, 1])
-    plt.savefig(save_path, dpi=600, bbox_inches='tight')
+    plt.savefig(save_path, dpi=600, bbox_inches="tight")
     plt.close()
 
 
@@ -381,25 +409,17 @@ def analyze_one_exp(
     # visualization
 
     if wine_resps is not None:
-        # draw_combined_WinE_resp(
-        #     image_array,
-        #     wine_resps,
-        #     os.path.join(save_root, "combined_wine", f"combined_wine_{exp_name}.png"),
-        # )
-        # draw_crsf_resp(
-        #     all_window.cpu().numpy(),
-        #     crsf_resp,
-        #     num_windows,
-        #     os.path.join(save_root, "crsf_resp", f"crsf_resp_{exp_name}.png"),
-        # )
-        # draw_HU_scatter(
-        #     image_array,
-        #     gt_array,
-        #     pred_array,
-        #     wine_resps,
-        #     class_idx_map,
-        #     os.path.join(save_root, "HU_scatter", f"HU_scatter_{exp_name}.png"),
-        # )
+        draw_combined_WinE_resp(
+            image_array,
+            wine_resps,
+            os.path.join(save_root, "combined_wine", f"combined_wine_{exp_name}.png"),
+        )
+        draw_crsf_resp(
+            all_window.cpu().numpy(),
+            crsf_resp,
+            num_windows,
+            os.path.join(save_root, "crsf_resp", f"crsf_resp_{exp_name}.png"),
+        )
         draw_HU_violinplot(
             image_array,
             gt_array,
@@ -408,12 +428,12 @@ def analyze_one_exp(
             class_idx_map,
             os.path.join(save_root, "HU_violin", f"HU_violin_{exp_name}.png"),
         )
-    # draw_confusion_matrix(
-    #     gt_array,
-    #     pred_array,
-    #     class_idx_map,
-    #     os.path.join(save_root, "cm", f"cm_{exp_name}.png"),
-    # )
+    draw_confusion_matrix(
+        gt_array,
+        pred_array,
+        class_idx_map,
+        os.path.join(save_root, "cm", f"cm_{exp_name}.png"),
+    )
 
     print("Drown.")
 
