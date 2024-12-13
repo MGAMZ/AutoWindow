@@ -2,6 +2,7 @@ import os
 import pdb
 import math
 from tkinter import Image
+from tqdm import tqdm
 
 from cv2 import exp
 import torch
@@ -170,24 +171,150 @@ def draw_confusion_matrix(
     plt.close(fig)
 
 
+def draw_HU_scatter(
+    image_array: np.ndarray,
+    gt_array: np.ndarray,
+    pred_array: np.ndarray,
+    sub_win: np.ndarray,
+    class_index_map: dict,
+    save_path: str,
+):
+    plt.figure(figsize=(10, 6))
+
+    # 获取所有预测类别
+    unique_classes = np.unique(pred_array)
+    # 创建颜色映射
+    colors = plt.cm.rainbow(np.linspace(0, 1, len(unique_classes)))
+    class_color_map = dict(zip(unique_classes, colors))
+
+    # 对每个sub_win绘制散点
+    for i in range(sub_win.shape[0]):
+        # 获取当前sub_win的值和对应位置的预测标签
+        current_values = sub_win[i]
+        current_preds = pred_array
+
+        # 对每个类别分别绘制
+        for cls in tqdm(
+            unique_classes,
+            desc=f"Drawing HU Scatter for Sub-Win{i+1}",
+            leave=False,
+            dynamic_ncols=True,
+        ):
+            mask = current_preds == cls
+            if mask.any():  # 如果存在该类别的点
+                values = current_values[mask]
+                x_coords = np.full_like(values, i)
+                plt.scatter(
+                    x_coords,
+                    values,
+                    c=[class_color_map[cls]],
+                    alpha=0.5,
+                    s=1,
+                    label=f"Class {cls}" if i == 0 else None,
+                )  # 只在第一个window添加图例
+
+    plt.xlabel("Sub-window Index")
+    plt.ylabel("HU Values")
+    plt.title("HU Values Distribution in Different Sub-windows")
+    plt.grid(True)
+
+    # 添加图例，并调整位置避免遮挡
+    if len(unique_classes) > 1:  # 只有多个类别时才添加图例
+        plt.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
+
+    # 保存图像时确保完整保存，包括图例
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=300, bbox_inches="tight")
+    plt.close()
+
+
+def draw_HU_violinplot(
+    image_array: np.ndarray,
+    gt_array: np.ndarray,
+    pred_array: np.ndarray,
+    sub_win: np.ndarray,
+    class_index_map: dict,
+    save_path: str,
+):
+    num_subwins = sub_win.shape[0]
+    unique_classes = sorted(np.unique(pred_array))
+    colors = plt.cm.GnBu(np.linspace(0, 1, len(unique_classes)))
+    
+    # 创建子图
+    fig, axes = plt.subplots(1, num_subwins, figsize=(5*num_subwins, 6), sharey=False)
+    
+    # 确保axes是数组，即使只有一个子图
+    if num_subwins == 1:
+        axes = [axes]
+    
+    # 为每个window创建单独的小提琴图
+    for i in range(num_subwins):
+        current_values = sub_win[i]
+        plot_data = []
+        positions = []
+        
+        # 收集每个类别的数据
+        for j, cls in enumerate(unique_classes):
+            mask = pred_array == cls
+            if mask.any():
+                values = current_values[mask]
+                plot_data.append(values)
+                positions.append(j)
+        
+        # 在对应的子图上绘制小提琴图
+        parts = axes[i].violinplot(plot_data, positions=positions, widths=0.8)
+        
+        # 设置每个violin的颜色
+        for j, pc in enumerate(parts['bodies']):
+            pc.set_facecolor(colors[j])
+            pc.set_alpha(0.7)
+        
+        # 设置子图的标题和标签
+        axes[i].set_title(f'Auto Window {i}')
+        axes[i].set_xticks(range(len(unique_classes)))
+        axes[i].set_xticklabels([f'Class {cls}' for cls in unique_classes], rotation=45)
+        axes[i].grid(True, axis='y')
+        
+        # 只给最左边的子图添加y轴标签
+        if i == 0:
+            axes[i].set_ylabel('Response')
+    
+    # 添加图例到图形级别
+    legend_elements = [plt.Rectangle((0,0),1,1, facecolor=colors[i], alpha=0.7) 
+                      for i in range(len(unique_classes))]
+    fig.legend(legend_elements, 
+              [f'Class {cls}' for cls in unique_classes],
+              bbox_to_anchor=(1.02, 0.5),
+              loc='center left')
+    
+    # 调整布局并保存
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=300, bbox_inches='tight')
+    plt.close()
+
+
 def analyze_one_exp(
     config_path: str,
     ckpt_path: str,
     class_idx_map: dict,
     itk_image_path: str,
     itk_mask_path: str,
-    save_root:str, 
+    save_root: str,
     inst_norm: bool,
     manual_win: bool,
     invert_y: bool = False,
     invert_channel: bool = False,
 ):
+    # load
+
     exp_name = os.path.basename(os.path.dirname(config_path))
 
     itk_image = sitk.ReadImage(itk_image_path)
     gt_image = sitk.ReadImage(itk_mask_path)
     image_array = sitk.GetArrayFromImage(itk_image)
     gt_array = sitk.GetArrayFromImage(gt_image)
+
+    # calculation
 
     assert (inst_norm and manual_win) is not True
     if inst_norm:
@@ -228,35 +355,55 @@ def analyze_one_exp(
 
     wine_resps = np.stack(wine_resps) if len(wine_resps) > 0 else None
     if invert_channel:
-        image_array = image_array.transpose(2,1,0)
-        gt_array = gt_array.transpose(2,1,0)
-        pred_array = pred_array.transpose(2,1,0)
-        wine_resps = wine_resps.transpose(0,3,2,1) if wine_resps is not None else None
-        
+        image_array = image_array.transpose(2, 1, 0)
+        gt_array = gt_array.transpose(2, 1, 0)
+        pred_array = pred_array.transpose(2, 1, 0)
+        wine_resps = (
+            wine_resps.transpose(0, 3, 2, 1) if wine_resps is not None else None
+        )
+
     if invert_y:
         image_array = image_array[..., ::-1, :]
         wine_resps = wine_resps[..., ::-1, :] if wine_resps is not None else None
         gt_array = gt_array[..., ::-1, :]
         pred_array = pred_array[..., ::-1]
-    
+
+    # visualization
+
     if wine_resps is not None:
-        draw_combined_WinE_resp(
+        # draw_combined_WinE_resp(
+        #     image_array,
+        #     wine_resps,
+        #     os.path.join(save_root, "combined_wine", f"combined_wine_{exp_name}.png"),
+        # )
+        # draw_crsf_resp(
+        #     all_window.cpu().numpy(),
+        #     crsf_resp,
+        #     num_windows,
+        #     os.path.join(save_root, "crsf_resp", f"crsf_resp_{exp_name}.png"),
+        # )
+        # draw_HU_scatter(
+        #     image_array,
+        #     gt_array,
+        #     pred_array,
+        #     wine_resps,
+        #     class_idx_map,
+        #     os.path.join(save_root, "HU_scatter", f"HU_scatter_{exp_name}.png"),
+        # )
+        draw_HU_violinplot(
             image_array,
+            gt_array,
+            pred_array,
             wine_resps,
-            os.path.join(save_root, "combined_wine", f"combined_wine_{exp_name}.png"),
+            class_idx_map,
+            os.path.join(save_root, "HU_scatter", f"HU_scatter_{exp_name}.png"),
         )
-        draw_crsf_resp(
-            all_window.cpu().numpy(),
-            crsf_resp,
-            num_windows,
-            os.path.join(save_root, "crsf_resp", f"crsf_resp_{exp_name}.png"),
-        )
-    draw_confusion_matrix(
-        gt_array,
-        pred_array,
-        class_idx_map,
-        os.path.join(save_root, "cm", f"cm_{exp_name}.png"),
-    )
+    # draw_confusion_matrix(
+    #     gt_array,
+    #     pred_array,
+    #     class_idx_map,
+    #     os.path.join(save_root, "cm", f"cm_{exp_name}.png"),
+    # )
 
     print("Drown.")
 
@@ -275,7 +422,7 @@ if __name__ == "__main__":
         class_idx_map=AbdomenCT1K_Map,
         itk_image_path="/file1/mgam_datasets/AbdomenCT_1K/spacing2_mha/image/01062.mha",
         itk_mask_path="/file1/mgam_datasets/AbdomenCT_1K/spacing2_mha/label/01062.mha",
-        save_root="/mnt/d/微云同步助手/312065559/微云同步/mgam_writing/AutoWindow/Figures", 
+        save_root="/mnt/d/微云同步助手/312065559/微云同步/mgam_writing/AutoWindow/Figures",
         inst_norm=True,
         manual_win=False,
         invert_y=True,
