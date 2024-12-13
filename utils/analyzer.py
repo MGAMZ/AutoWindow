@@ -18,7 +18,7 @@ from mgamdata.models.AutoWindow import AutoWindowSetting
 
 
 CMAP_COLOR = ["#50b2cd", "#c490c4"]
-CMAP_SEQ_COLOR = ["GnBu", "RdPu"]
+CMAP_SEQ_COLOR = ["spring", "RdPu"]
 
 
 def draw_combined_WinE_resp(ori: np.ndarray, resps: np.ndarray, save_path: str):
@@ -190,9 +190,7 @@ def draw_HU_scatter(
     # 对每个sub_win绘制散点
     for i in range(sub_win.shape[0]):
         # 获取当前sub_win的值和对应位置的预测标签
-        current_values = sub_win[i]
         current_preds = pred_array
-
         # 对每个类别分别绘制
         for cls in tqdm(
             unique_classes,
@@ -202,7 +200,7 @@ def draw_HU_scatter(
         ):
             mask = current_preds == cls
             if mask.any():  # 如果存在该类别的点
-                values = current_values[mask]
+                values = sub_win[i][mask]
                 x_coords = np.full_like(values, i)
                 plt.scatter(
                     x_coords,
@@ -236,60 +234,72 @@ def draw_HU_violinplot(
     class_index_map: dict,
     save_path: str,
 ):
+    index_class_map = {v: k for k, v in class_index_map.items()}
     num_subwins = sub_win.shape[0]
-    unique_classes = sorted(np.unique(pred_array))
-    colors = plt.cm.GnBu(np.linspace(0, 1, len(unique_classes)))
+    unique_classes = sorted(np.unique(pred_array))[1:]
+    colors = plt.cm.spring(np.linspace(0, 1, len(unique_classes)))
     
-    # 创建子图
-    fig, axes = plt.subplots(1, num_subwins, figsize=(5*num_subwins, 6), sharey=False)
+    num_rows = num_subwins  # 每个子图一行
+    num_cols = 1  # 只有一列
     
-    # 确保axes是数组，即使只有一个子图
-    if num_subwins == 1:
-        axes = [axes]
+    # 增加右侧空间以放置标题
+    fig = plt.figure(figsize=(12, 1.2*num_rows))
     
-    # 为每个window创建单独的小提琴图
+    # 创建子图列表
+    axes = []
     for i in range(num_subwins):
-        current_values = sub_win[i]
+        ax = plt.subplot2grid((num_rows, num_cols), (i, 0))
+        axes.append(ax)
+        
         plot_data = []
         positions = []
+        labels = []
         
         # 收集每个类别的数据
         for j, cls in enumerate(unique_classes):
             mask = pred_array == cls
-            if mask.any():
-                values = current_values[mask]
+            values = sub_win[i][mask]
+            if len(values) > 0:
                 plot_data.append(values)
                 positions.append(j)
+                labels.append(index_class_map[cls])
         
-        # 在对应的子图上绘制小提琴图
-        parts = axes[i].violinplot(plot_data, positions=positions, widths=0.8)
+        # 绘制小提琴图
+        parts = ax.violinplot(plot_data, positions=positions, widths=0.8)
         
         # 设置每个violin的颜色
         for j, pc in enumerate(parts['bodies']):
             pc.set_facecolor(colors[j])
             pc.set_alpha(0.7)
         
-        # 设置子图的标题和标签
-        axes[i].set_title(f'Auto Window {i}')
-        axes[i].set_xticks(range(len(unique_classes)))
-        axes[i].set_xticklabels([f'Class {cls}' for cls in unique_classes], rotation=45)
-        axes[i].grid(True, axis='y')
+        # 设置区间线的颜色
+        for partname in ['cbars', 'cmins', 'cmaxes']:
+            if partname in parts:
+                vp = parts[partname]
+                vp.set_edgecolor(CMAP_COLOR[0])
+                vp.set_linewidth(1)
+                vp.set_alpha(0.3)
         
-        # 只给最左边的子图添加y轴标签
-        if i == 0:
-            axes[i].set_ylabel('Response')
+        # 移除原有标题设置
+        # ax.set_title(f'Auto Window {i}')
+        
+        # 在右侧添加垂直标题
+        ax.text(1.02, 0.5, f'A.Win. {i}', 
+                rotation=90,
+                transform=ax.transAxes,
+                verticalalignment='center')
+        
+        ax.grid(True, axis='y')
+        if i == num_subwins - 1:
+            ax.set_xticks(range(len(unique_classes)))
+            ax.set_xticklabels([index_class_map[cls] for cls in unique_classes], rotation=90)
+        else:
+            ax.set_xticks([])
+        ax.set_ylabel('Response')
     
-    # 添加图例到图形级别
-    legend_elements = [plt.Rectangle((0,0),1,1, facecolor=colors[i], alpha=0.7) 
-                      for i in range(len(unique_classes))]
-    fig.legend(legend_elements, 
-              [f'Class {cls}' for cls in unique_classes],
-              bbox_to_anchor=(1.02, 0.5),
-              loc='center left')
-    
-    # 调整布局并保存
-    plt.tight_layout()
-    plt.savefig(save_path, dpi=300, bbox_inches='tight')
+    # 调整布局并保存，右侧留出更多空间放置标题
+    plt.tight_layout(rect=[0, 0, 0.95, 1])
+    plt.savefig(save_path, dpi=600, bbox_inches='tight')
     plt.close()
 
 
@@ -396,7 +406,7 @@ def analyze_one_exp(
             pred_array,
             wine_resps,
             class_idx_map,
-            os.path.join(save_root, "HU_scatter", f"HU_scatter_{exp_name}.png"),
+            os.path.join(save_root, "HU_violin", f"HU_violin_{exp_name}.png"),
         )
     # draw_confusion_matrix(
     #     gt_array,
