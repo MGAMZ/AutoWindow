@@ -1,15 +1,11 @@
 import os
 import pdb
-import math
-from tkinter import Image
 from tqdm import tqdm
 
-from cv2 import exp
 import torch
 import numpy as np
 import SimpleITK as sitk
 import matplotlib.pyplot as plt
-from matplotlib.colors import LogNorm
 from matplotlib.ticker import MaxNLocator
 from sklearn.metrics import confusion_matrix
 
@@ -17,8 +13,10 @@ from inference import Inferencer_3D
 from mgamdata.models.AutoWindow import AutoWindowSetting
 
 
-CMAP_COLOR = ["#50b2cd", "#c490c4"]
+
 CMAP_SEQ_COLOR = ["winter", "RdPu"]
+DEFAULT_CMAP = plt.get_cmap(CMAP_SEQ_COLOR[0])
+CMAP_COLOR = [DEFAULT_CMAP(32), DEFAULT_CMAP(224)]
 
 
 def draw_combined_WinE_resp(ori: np.ndarray, resps: np.ndarray, save_path: str):
@@ -49,8 +47,8 @@ def draw_combined_WinE_resp(ori: np.ndarray, resps: np.ndarray, save_path: str):
     # 绘制原始直方图
     ax_hist_ori = axes[1, 0]
     ax_hist_ori.hist(ori.flatten(), bins=100, color=CMAP_COLOR[1], alpha=0.7)
-    ax_hist_ori.axvline(vmin, color='k', linestyle='dashed', linewidth=1)
-    ax_hist_ori.axvline(vmax, color='k', linestyle='dashed', linewidth=1)
+    ax_hist_ori.axvline(vmin, color="k", linestyle="dashed", linewidth=1)
+    ax_hist_ori.axvline(vmax, color="k", linestyle="dashed", linewidth=1)
     ax_hist_ori.set_xlabel("Hounsfield Units")
     ax_hist_ori.set_ylabel("Frequency")
     ax_hist_ori.set_yscale("symlog")
@@ -76,8 +74,8 @@ def draw_combined_WinE_resp(ori: np.ndarray, resps: np.ndarray, save_path: str):
         # 直方图
         ax_hist = axes[1, i + 1]
         ax_hist.hist(resp.flatten(), bins=100, color=CMAP_COLOR[0], alpha=0.7)
-        ax_hist.axvline(vmin, color='k', linestyle='dashed', linewidth=1)
-        ax_hist.axvline(vmax, color='k', linestyle='dashed', linewidth=1)
+        ax_hist.axvline(vmin, color="k", linestyle="dashed", linewidth=1)
+        ax_hist.axvline(vmax, color="k", linestyle="dashed", linewidth=1)
         ax_hist.set_xlabel("Response")
         ax_hist.set_xlim(-1.8, 1.0)
         ax_hist.set_ylim(10e2, 10e6)
@@ -141,20 +139,28 @@ def draw_confusion_matrix(
         pred (np.ndarray): size (Z, Y, X)
     """
     # 计算混淆矩阵
-    cm = confusion_matrix(gt.flatten(), pred.flatten())[1:]
+    cm = confusion_matrix(gt.flatten(), pred.flatten())
     # 创建图形和轴
-    fig, ax = plt.subplots(figsize=(6, 4.5))
-    # 绘制混淆矩阵，应用对数归一化
-    im = ax.imshow(
-        cm,
-        interpolation="nearest",
-        cmap=CMAP_SEQ_COLOR[0],
-        norm=LogNorm(vmin=1000, vmax=30000, clip=True),
-        alpha=0.7,
-    )
+    num_foreground_cls = len(class_idx_map)-1
+    fig, ax = plt.subplots(figsize=(num_foreground_cls*2, num_foreground_cls))
+    # 绘制混淆矩阵，每行独立进行颜色映射
+    num_rows, num_cols = cm.shape
+    for i in range(num_rows):
+        row = cm[i].reshape(1, -1)
+        im = ax.imshow(
+            row,
+            interpolation="nearest",
+            cmap=CMAP_SEQ_COLOR[0],
+            vmin=row.min(),
+            vmax=row.max(),
+            alpha=0.7,
+            extent=(-0.5, num_cols-0.5, i-0.5, i+0.5),
+        )
     # 添加颜色条
     cbar = plt.colorbar(im, ax=ax)
-    cbar.ax.set_ylabel("Count (Log Scale)", rotation=270, labelpad=15)
+    # 取消颜色条刻度
+    cbar.set_ticks([])
+    cbar.ax.set_ylabel("Column-Wise Color Mapping", rotation=270, labelpad=15)
     # 设置标题和标签
     ax.set_xlabel("Predicted Label")
     ax.set_ylabel("True Label")
@@ -163,12 +169,13 @@ def draw_confusion_matrix(
         {v: k for k, v in class_idx_map.items()}[idx]
         for idx in np.union1d(np.unique(gt), np.unique(pred))
     ]
+    ax.set_xlim(-0.5, -0.5 + len(ticks))
     ax.set_xticks(np.arange(len(ticks)))
-    ax.set_yticks(np.arange(len(ticks) - 1))
     ax.set_xticklabels(ticks, rotation=45, ha="right")
-    ax.set_yticklabels(ticks[1:])
+    ax.set_ylim(-0.5, -0.5 + len(ticks))
+    ax.set_yticks(np.arange(len(ticks)))
+    ax.set_yticklabels(ticks)
     # 添加数值标签
-    thresh = cm.max() / 2.0
     for i in range(cm.shape[0]):
         for j in range(cm.shape[1]):
             ax.text(
@@ -177,14 +184,13 @@ def draw_confusion_matrix(
                 f"{cm[i, j]}",
                 ha="center",
                 va="center",
-                color="white" if cm[i, j] > thresh else "black",
+                color="black",
             )
     # 调整布局并保存图像
+    ax.set_aspect('auto')
+    ax.set_box_aspect(0.5)  # 设置固定的纵横比
     fig.tight_layout()
-    fig.savefig(
-        save_path,
-        dpi=500,
-    )
+    fig.savefig(save_path, dpi=500)
     plt.close(fig)
 
 
@@ -455,7 +461,7 @@ if __name__ == "__main__":
         save_root="/mnt/d/微云同步助手/312065559/微云同步/mgam_writing/AutoWindow/Figures",
         inst_norm=True,
         manual_win=False,
-        invert_y=True,
+        invert_y=False,
     )
     analyze_one_exp(
         config_path="/file1/mgam_projects/AutoWindow/configs/0.0.6.2.Window4/MedNeXt.py",
@@ -466,7 +472,7 @@ if __name__ == "__main__":
         save_root="/mnt/d/微云同步助手/312065559/微云同步/mgam_writing/AutoWindow/Figures",
         inst_norm=False,
         manual_win=False,
-        invert_y=True,
+        invert_y=False,
     )
     analyze_one_exp(
         config_path="/file1/mgam_projects/AutoWindow/configs/0.0.6.3.Window8/MedNeXt.py",
@@ -477,7 +483,7 @@ if __name__ == "__main__":
         save_root="/mnt/d/微云同步助手/312065559/微云同步/mgam_writing/AutoWindow/Figures",
         inst_norm=False,
         manual_win=False,
-        invert_y=True,
+        invert_y=False,
     )
 
     # KiTS23
@@ -518,7 +524,7 @@ if __name__ == "__main__":
         ckpt_path="/file1/mgam_projects/AutoWindow/work_dirs/0.0.3.3.InstanceNorm/MedNeXt/iter_200000.pth",
         class_idx_map=ImageTBAD_Map,
         itk_image_path="/file1/mgam_datasets/ImageTBAD/spacing2_mha/image/180.mha",
-        itk_mask_path="/file1/mgam_datasets/KiTS23/spacing2_mha/label/00523.mha",
+        itk_mask_path="/file1/mgam_datasets/ImageTBAD/spacing2_mha/label/180.mha",
         save_root="/mnt/d/微云同步助手/312065559/微云同步/mgam_writing/AutoWindow/Figures",
         inst_norm=True,
         manual_win=False,
@@ -528,7 +534,7 @@ if __name__ == "__main__":
         ckpt_path="/file1/mgam_projects/AutoWindow/work_dirs/0.0.3.0.Window4_ImageTBAD/MedNeXt/best_Perf_mDice_iter_135000.pth",
         class_idx_map=ImageTBAD_Map,
         itk_image_path="/file1/mgam_datasets/ImageTBAD/spacing2_mha/image/180.mha",
-        itk_mask_path="/file1/mgam_datasets/KiTS23/spacing2_mha/label/00523.mha",
+        itk_mask_path="/file1/mgam_datasets/ImageTBAD/spacing2_mha/label/180.mha",
         save_root="/mnt/d/微云同步助手/312065559/微云同步/mgam_writing/AutoWindow/Figures",
         inst_norm=False,
         manual_win=False,
@@ -538,7 +544,7 @@ if __name__ == "__main__":
         ckpt_path="/file1/mgam_projects/AutoWindow/work_dirs/0.0.3.1.Window8/MedNeXt/best_Perf_mDice_iter_130000.pth",
         class_idx_map=ImageTBAD_Map,
         itk_image_path="/file1/mgam_datasets/ImageTBAD/spacing2_mha/image/180.mha",
-        itk_mask_path="/file1/mgam_datasets/KiTS23/spacing2_mha/label/00523.mha",
+        itk_mask_path="/file1/mgam_datasets/ImageTBAD/spacing2_mha/label/180.mha",
         save_root="/mnt/d/微云同步助手/312065559/微云同步/mgam_writing/AutoWindow/Figures",
         inst_norm=False,
         manual_win=False,
