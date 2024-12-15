@@ -410,7 +410,7 @@ def analyze_one_exp(
         image_array = image_array[..., ::-1, :]
         wine_resps = wine_resps[..., ::-1, :] if wine_resps is not None else None
         gt_array = gt_array[..., ::-1, :]
-        pred_array = pred_array[..., ::-1]
+        pred_array = pred_array[..., ::-1, :]
 
     # visualization
 
@@ -461,7 +461,18 @@ if __name__ == "__main__":
         save_root="/mnt/d/微云同步助手/312065559/微云同步/mgam_writing/AutoWindow/Figures",
         inst_norm=True,
         manual_win=False,
-        invert_y=False,
+        invert_y=True,
+    )
+    analyze_one_exp(
+        config_path="/file1/mgam_projects/AutoWindow/configs/0.0.6.1.NoNorm/MedNeXt.py",
+        ckpt_path="/file1/mgam_projects/AutoWindow/work_dirs/0.0.6.1.NoNorm/MedNeXt/iter_200000.pth",
+        class_idx_map=AbdomenCT1K_Map,
+        itk_image_path="/file1/mgam_datasets/AbdomenCT_1K/spacing2_mha/image/01062.mha",
+        itk_mask_path="/file1/mgam_datasets/AbdomenCT_1K/spacing2_mha/label/01062.mha",
+        save_root="/mnt/d/微云同步助手/312065559/微云同步/mgam_writing/AutoWindow/Figures",
+        inst_norm=False,
+        manual_win=False,
+        invert_y=True,
     )
     analyze_one_exp(
         config_path="/file1/mgam_projects/AutoWindow/configs/0.0.6.2.Window4/MedNeXt.py",
@@ -472,7 +483,7 @@ if __name__ == "__main__":
         save_root="/mnt/d/微云同步助手/312065559/微云同步/mgam_writing/AutoWindow/Figures",
         inst_norm=False,
         manual_win=False,
-        invert_y=False,
+        invert_y=True,
     )
     analyze_one_exp(
         config_path="/file1/mgam_projects/AutoWindow/configs/0.0.6.3.Window8/MedNeXt.py",
@@ -483,7 +494,18 @@ if __name__ == "__main__":
         save_root="/mnt/d/微云同步助手/312065559/微云同步/mgam_writing/AutoWindow/Figures",
         inst_norm=False,
         manual_win=False,
-        invert_y=False,
+        invert_y=True,
+    )
+    analyze_one_exp(
+        config_path="/file1/mgam_projects/AutoWindow/configs/0.0.6.4.wl40_ww400/MedNeXt.py",
+        ckpt_path="/file1/mgam_projects/AutoWindow/work_dirs/0.0.6.4.wl40_ww400/MedNeXt/iter_200000.pth",
+        class_idx_map=AbdomenCT1K_Map,
+        itk_image_path="/file1/mgam_datasets/AbdomenCT_1K/spacing2_mha/image/01062.mha",
+        itk_mask_path="/file1/mgam_datasets/AbdomenCT_1K/spacing2_mha/label/01062.mha",
+        save_root="/mnt/d/微云同步助手/312065559/微云同步/mgam_writing/AutoWindow/Figures",
+        inst_norm=False,
+        manual_win=True,
+        invert_y=True,
     )
 
     # KiTS23
@@ -495,6 +517,16 @@ if __name__ == "__main__":
         itk_mask_path="/file1/mgam_datasets/KiTS23/spacing2_mha/label/00523.mha",
         save_root="/mnt/d/微云同步助手/312065559/微云同步/mgam_writing/AutoWindow/Figures",
         inst_norm=True,
+        manual_win=False,
+    )
+    analyze_one_exp(
+        config_path="/file1/mgam_projects/AutoWindow/configs/0.0.5.1.NoNorm/MedNeXt.py",
+        ckpt_path="/file1/mgam_projects/AutoWindow/work_dirs/0.0.5.1.NoNorm/MedNeXt/iter_200000.pth",
+        class_idx_map=KiTS23_Map,
+        itk_image_path="/file1/mgam_datasets/KiTS23/spacing2_mha/image/00523.mha",
+        itk_mask_path="/file1/mgam_datasets/KiTS23/spacing2_mha/label/00523.mha",
+        save_root="/mnt/d/微云同步助手/312065559/微云同步/mgam_writing/AutoWindow/Figures",
+        inst_norm=False,
         manual_win=False,
     )
     analyze_one_exp(
@@ -517,18 +549,18 @@ if __name__ == "__main__":
         inst_norm=False,
         manual_win=False,
     )
+    analyze_one_exp(
+        config_path="/file1/mgam_projects/AutoWindow/configs/0.0.5.4.wl20_ww400/MedNeXt.py",
+        ckpt_path="/file1/mgam_projects/AutoWindow/work_dirs/0.0.5.4.wl20_ww400/MedNeXt/iter_200000.pth",
+        class_idx_map=KiTS23_Map,
+        itk_image_path="/file1/mgam_datasets/KiTS23/spacing2_mha/image/00523.mha",
+        itk_mask_path="/file1/mgam_datasets/KiTS23/spacing2_mha/label/00523.mha",
+        save_root="/mnt/d/微云同步助手/312065559/微云同步/mgam_writing/AutoWindow/Figures",
+        inst_norm=False,
+        manual_win=True,
+    )
 
     # ImageTBAD
-    analyze_one_exp(
-        config_path="/file1/mgam_projects/AutoWindow/configs/0.0.3.3.InstanceNorm/MedNeXt.py",
-        ckpt_path="/file1/mgam_projects/AutoWindow/work_dirs/0.0.3.3.InstanceNorm/MedNeXt/iter_200000.pth",
-        class_idx_map=ImageTBAD_Map,
-        itk_image_path="/file1/mgam_datasets/ImageTBAD/spacing2_mha/image/180.mha",
-        itk_mask_path="/file1/mgam_datasets/ImageTBAD/spacing2_mha/label/180.mha",
-        save_root="/mnt/d/微云同步助手/312065559/微云同步/mgam_writing/AutoWindow/Figures",
-        inst_norm=True,
-        manual_win=False,
-    )
     analyze_one_exp(
         config_path="/file1/mgam_projects/AutoWindow/configs/0.0.3.0.Window4_ImageTBAD/MedNeXt.py",
         ckpt_path="/file1/mgam_projects/AutoWindow/work_dirs/0.0.3.0.Window4_ImageTBAD/MedNeXt/best_Perf_mDice_iter_135000.pth",
@@ -547,5 +579,25 @@ if __name__ == "__main__":
         itk_mask_path="/file1/mgam_datasets/ImageTBAD/spacing2_mha/label/180.mha",
         save_root="/mnt/d/微云同步助手/312065559/微云同步/mgam_writing/AutoWindow/Figures",
         inst_norm=False,
+        manual_win=False,
+    )
+    analyze_one_exp(
+        config_path="/file1/mgam_projects/AutoWindow/configs/0.0.3.2.NoNorm/MedNeXt.py",
+        ckpt_path="/file1/mgam_projects/AutoWindow/work_dirs/0.0.3.2.NoNorm/MedNeXt/iter_200000.pth",
+        class_idx_map=ImageTBAD_Map,
+        itk_image_path="/file1/mgam_datasets/ImageTBAD/spacing2_mha/image/180.mha",
+        itk_mask_path="/file1/mgam_datasets/ImageTBAD/spacing2_mha/label/180.mha",
+        save_root="/mnt/d/微云同步助手/312065559/微云同步/mgam_writing/AutoWindow/Figures",
+        inst_norm=False,
+        manual_win=False,
+    )
+    analyze_one_exp(
+        config_path="/file1/mgam_projects/AutoWindow/configs/0.0.3.3.InstanceNorm/MedNeXt.py",
+        ckpt_path="/file1/mgam_projects/AutoWindow/work_dirs/0.0.3.3.InstanceNorm/MedNeXt/iter_200000.pth",
+        class_idx_map=ImageTBAD_Map,
+        itk_image_path="/file1/mgam_datasets/ImageTBAD/spacing2_mha/image/180.mha",
+        itk_mask_path="/file1/mgam_datasets/ImageTBAD/spacing2_mha/label/180.mha",
+        save_root="/mnt/d/微云同步助手/312065559/微云同步/mgam_writing/AutoWindow/Figures",
+        inst_norm=True,
         manual_win=False,
     )
