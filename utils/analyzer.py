@@ -13,7 +13,6 @@ from inference import Inferencer_3D
 from mgamdata.models.AutoWindow import AutoWindowSetting
 
 
-
 CMAP_SEQ_COLOR = ["winter", "RdPu"]
 DEFAULT_CMAP = plt.get_cmap(CMAP_SEQ_COLOR[0])
 CMAP_COLOR = [DEFAULT_CMAP(32), DEFAULT_CMAP(224)]
@@ -138,11 +137,21 @@ def draw_confusion_matrix(
         gt (np.ndarray): size (Z, Y, X)
         pred (np.ndarray): size (Z, Y, X)
     """
+    index_class_map = {v: k for k, v in class_idx_map.items()}
+    valid_indexes = list(index_class_map.keys())
+    valid_gt_area = np.isin(gt, valid_indexes)
+    gt[~valid_gt_area] = 0
+    valid_pred_area = np.isin(pred, valid_indexes)
+    pred[~valid_pred_area] = 0
+    valid_area = valid_gt_area | valid_pred_area
+    gt = gt[valid_area]
+    pred = pred[valid_area]
+
     # 计算混淆矩阵
     cm = confusion_matrix(gt.flatten(), pred.flatten())
     # 创建图形和轴
-    num_foreground_cls = len(class_idx_map)-1
-    fig, ax = plt.subplots(figsize=(num_foreground_cls*2, num_foreground_cls))
+    num_foreground_cls = len(class_idx_map) - 1
+    fig, ax = plt.subplots(figsize=(num_foreground_cls * 2, num_foreground_cls))
     # 绘制混淆矩阵，每行独立进行颜色映射
     num_rows, num_cols = cm.shape
     for i in range(num_rows):
@@ -154,7 +163,7 @@ def draw_confusion_matrix(
             vmin=row.min(),
             vmax=row.max(),
             alpha=0.7,
-            extent=(-0.5, num_cols-0.5, i-0.5, i+0.5),
+            extent=(-0.5, num_cols - 0.5, i - 0.5, i + 0.5),
         )
     # 添加颜色条
     cbar = plt.colorbar(im, ax=ax)
@@ -187,7 +196,7 @@ def draw_confusion_matrix(
                 color="black",
             )
     # 调整布局并保存图像
-    ax.set_aspect('auto')
+    ax.set_aspect("auto")
     ax.set_box_aspect(0.5)  # 设置固定的纵横比
     fig.tight_layout()
     fig.savefig(save_path, dpi=500)
@@ -258,6 +267,18 @@ def draw_HU_violinplot(
     save_path: str,
 ):
     index_class_map = {v: k for k, v in class_index_map.items()}
+    valid_indexes = list(index_class_map.keys())
+    valid_gt_area = np.isin(gt_array, valid_indexes)
+    gt_array[~valid_gt_area] = 0
+    valid_pred_area = np.isin(pred_array, valid_indexes)
+    pred_array[~valid_pred_area] = 0
+
+    valid_area = valid_gt_area | valid_pred_area
+    image_array = image_array[valid_area]
+    gt_array = gt_array[valid_area]
+    pred_array = pred_array[valid_area]
+    sub_win = sub_win[:, valid_area]
+
     num_subwins = sub_win.shape[0]
     unique_classes = sorted(np.unique(pred_array))[1:]
     num_rows = num_subwins  # 每个子图一行
@@ -345,7 +366,7 @@ def analyze_one_exp(
     itk_mask_path: str,
     save_root: str,
     inst_norm: bool,
-    manual_win: bool,
+    manual_win: list[int] | None,
     invert_y: bool = False,
     invert_channel: bool = False,
 ):
@@ -364,8 +385,8 @@ def analyze_one_exp(
     if inst_norm:
         image_array = (image_array - image_array.min()) / image_array.std()
     if manual_win:
-        ww = 400
-        wl = 40
+        ww = manual_win[1]
+        wl = manual_win[0]
         image_array = np.clip(image_array, wl - ww // 2, wl + ww // 2)
         image_array = (image_array - (wl - ww // 2)) / ww
 
