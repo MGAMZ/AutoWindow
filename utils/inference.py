@@ -2,23 +2,15 @@ import os
 import argparse
 import traceback
 import pdb
+from colorama import Style, Fore
 
 import torch
 import SimpleITK as sitk
 import numpy as np
 
 from mgamdata.mm.inference import Inferencer
-from mgamdata.mm.mmseg_Dev3D import EncoderDecoder_3D
 from mgamdata.models.AutoWindow import AutoWindowSetting
 
-
-
-def parse_args():
-    parser = argparse.ArgumentParser(description='Inference')
-    parser.add_argument('config', type=str)
-    parser.add_argument('checkpoint', type=str)
-    parser.add_argument('--output', type=str, default=None)
-    return parser.parse_args()
 
 
 class Inferencer_3D(Inferencer):
@@ -34,8 +26,7 @@ class Inferencer_3D(Inferencer):
         return pred # [Class, Z, Y, X]
 
 
-def main():
-    args = parse_args()
+def interactive_run(args):
     inferencer = Inferencer_3D(args.config, args.checkpoint)
     
     while True:
@@ -81,6 +72,28 @@ def main():
             continue
 
 
+def recursive_auto_inference(args):
+    os.makedirs(args.output, exist_ok=True)
+    inferencer = Inferencer_3D(args.config, args.checkpoint)
+    print(Fore.BLUE, "Inferencer Initialized.", Style.RESET_ALL)
+    for itk_image, itk_pred, mha_path in inferencer.Inference_FromITKFolder(args.input_root):
+        output_path = os.path.join(args.output, os.path.basename(mha_path))
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        sitk.WriteImage(itk_pred, output_path)
+        print(f"Prediction saved to {output_path}.")
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description='Inference')
+    parser.add_argument('config', type=str)
+    parser.add_argument('checkpoint', type=str)
+    parser.add_argument('--output', type=str, default=None)
+    parser.add_argument('--input-root', type=str, default=None)
+    return parser.parse_args()
+
+
 
 if __name__ == '__main__':
-    main()
+    args = parse_args()
+    # interactive_run(args)
+    recursive_auto_inference(args)

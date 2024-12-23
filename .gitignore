@@ -175,3 +175,8 @@ test_dirs
 *.jpeg
 *.txt
 Figure/
+InferenceResult/
+*.mha
+*.nii
+*.nii.gz
+*.mhd
