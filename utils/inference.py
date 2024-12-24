@@ -7,6 +7,7 @@ from colorama import Style, Fore
 import torch
 import SimpleITK as sitk
 import numpy as np
+from tqdm import tqdm
 
 from mgamdata.mm.inference import Inferencer
 from mgamdata.models.AutoWindow import AutoWindowSetting
@@ -79,8 +80,8 @@ def recursive_auto_inference(args):
     for itk_image, itk_pred, mha_path in inferencer.Inference_FromITKFolder(args.input_root):
         output_path = os.path.join(args.output, os.path.basename(mha_path))
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        sitk.WriteImage(itk_pred, output_path)
-        print(f"Prediction saved to {output_path}.")
+        sitk.WriteImage(itk_pred, output_path, useCompression=True)
+        tqdm.write(f"Prediction saved to {output_path}.")
 
 
 def parse_args():
