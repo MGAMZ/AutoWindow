@@ -17,13 +17,10 @@ from mgamdata.models.AutoWindow import AutoWindowSetting
 class Inferencer_3D(Inferencer):
     @torch.inference_mode()
     def Inference_FromNDArray(self, image_array:np.ndarray) -> torch.Tensor:
-        inputs = torch.from_numpy(image_array).to(dtype=torch.float32, device='cuda')
+        data, _ = self._preprocess(image_array)
         model: AutoWindowSetting = self.model
-        image_meta = [{
-            'ori_shape': image_array.shape,
-            'img_shape': image_array.shape,
-        }]
-        pred = model.inference(inputs[None, None], image_meta).squeeze()
+        pred = model.predict(torch.stack(data['inputs']).cuda(), None)
+        pred = torch.stack([b.seg_logits.data for b in pred]).cpu().squeeze(0)
         return pred # [Class, Z, Y, X]
 
 
