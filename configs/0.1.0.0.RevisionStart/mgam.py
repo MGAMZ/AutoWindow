@@ -53,7 +53,7 @@ resume_param_scheduler = True
 pre_crop_data_root = '/mnt/h/mgam_datasets/AbdomenCT_1K/spacingZ2_sizeXY256_cropZ32_npz/'
 mha_data_root = '/mnt/h/mgam_datasets/AbdomenCT_1K/spacingZ2_sizeXY256_mha/'
 num_classes = 5
-val_sample_ratio = 0.1
+val_sample_ratio = 1.0
 wl = 40     # window loacation
 ww = 400    # window width
 pad_val = 0
@@ -63,9 +63,8 @@ seg_pad_val = 0
 lr = 1e-4
 batch_size = 4 if not debug else 2
 grad_accumulation = 2
-embed_dims = 16
 in_channels = 1
-size = (32, 256, 256)       # 单次前向处理的分辨率, 不限制推理
+size = (32,256,256)
 
 # PMWP Sub-Network Hyperparameters
 data_range = [-1024,3072]
@@ -124,7 +123,7 @@ train_dataloader = dict(
     pin_memory=True,
     persistent_workers=True if workers > 0 else False,
     sampler=dict(
-        type=InfiniteSampler, 
+        type=InfiniteSampler,
         shuffle=False if debug else True),
     dataset=dict(
         type=AbdomenCT_1K_Precrop_Npz,
@@ -142,8 +141,8 @@ val_dataloader = dict(
     pin_memory=False,
     persistent_workers=True if workers > 0 else False,
     sampler=dict(
-        type=RatioSampler, 
-        shuffle=False, 
+        type=RatioSampler,
+        shuffle=False,
         use_sample_ratio=val_sample_ratio),
     dataset=dict(
         type=AbdomenCT_1K_Semi_Mha,
@@ -172,9 +171,9 @@ test_dataloader = dict(
 
 # 构建评估器
 val_evaluator = test_evaluator = dict(
-    type=IoUMetric_PerClass, 
-    ignore_index=255, 
-    iou_metrics=['mIoU','mDice', 'mFscore'], 
+    type=IoUMetric_PerClass,
+    ignore_index=255,
+    iou_metrics=['mIoU','mDice', 'mFscore'],
     prefix='Perf')
 
 data_preprocessor = dict(
@@ -234,11 +233,11 @@ default_hooks = dict(
     logger=dict(
         type=LoggerJSON,
         interval=logger_interval,
-        log_metric_by_epoch=False), 
+        log_metric_by_epoch=False),
     param_scheduler=dict(type=ParamSchedulerHook),
     checkpoint=dict(
-        type=CheckpointHook, 
-        by_epoch=False, 
+        type=CheckpointHook,
+        by_epoch=False,
         max_keep_ckpts=1,
         interval=save_interval,
         save_best='Perf/mDice' if not debug else None,
@@ -250,6 +249,12 @@ default_hooks = dict(
         val_vis_interval=vis_interval if not debug else 1,
         test_vis_interval=vis_interval if not debug else 1),
 )
+
+visualizer = dict(
+    type=SegViser,
+    vis_backends=[dict(type=LocalVisBackend), dict(type=TensorboardVisBackend)],
+    plt_invert=True,
+    dim=3)
 
 # torch.dynamo
 compile = dict(
@@ -276,7 +281,7 @@ else:
 env_cfg = dict(
     # 子进程中使用CUDA的话必须使用spawn, 需要保证所有参数可pickle
     # 一般情况下可以使用fork, 可以共享内存空间
-    mp_cfg=dict(mp_start_method='fork', opencv_num_threads=0), 
+    mp_cfg=dict(mp_start_method='fork', opencv_num_threads=0),
     dist_cfg=dict(backend='nccl'),
     allow_tf32=True,
     benchmark=True,
@@ -287,12 +292,5 @@ env_cfg = dict(
     dynamo_logging_level='WARNING',
     torch_logging_level='WARNING',
 )
-
-visualizer = dict(
-    type=SegViser,
-    vis_backends=[dict(type=LocalVisBackend), dict(type=TensorboardVisBackend)],
-    plt_invert=True,
-    dim=3)
 log_processor = dict(by_epoch=False)
 log_level = 'INFO'
-tta_model = None

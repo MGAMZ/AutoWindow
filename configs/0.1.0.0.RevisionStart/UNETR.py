@@ -32,6 +32,7 @@ model = dict(
     binary_segment_threshold=None,
     inference_PatchSize=size,
     inference_PatchStride=[s//2 for s in size],
+    inference_PatchAccumulateDevice='cpu',
     backbone = dict(
         type=UNETR,
         in_channels=in_channels,
