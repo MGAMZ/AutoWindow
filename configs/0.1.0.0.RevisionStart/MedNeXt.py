@@ -12,7 +12,7 @@ from mgamdata.mm.mgam_models import mgam_Seg3D_Lite
 #          dpi=100, interval=logger_interval),
 # ]
 
-embed_dims = 12
+embed_dims = 8
 MedNeXt_Checkpoint = True
 
 # 神经网络设定
@@ -40,7 +40,7 @@ model = dict(
         type=MedNeXt,
         in_channels=in_channels, # type: ignore
         n_channels=embed_dims,
-        kernel_size=5,
+        kernel_size=3,
         n_classes=num_classes,
         checkpoint_style='outside_block' if MedNeXt_Checkpoint else None,
         dim="3d"
