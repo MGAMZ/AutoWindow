@@ -30,6 +30,7 @@ model = dict(
     #     lr_mult=pmwp_lr_mult,
     # ),
     binary_segment_threshold=None,
+    auto_activate_after_logits=True,
     inference_PatchSize=size,
     inference_PatchStride=[s//2 for s in size],
     inference_PatchAccumulateDevice='cpu',

@@ -16,7 +16,6 @@ from mmengine.optim.scheduler import LinearLR, PolyLR
 from mmengine.optim import OptimWrapper, AmpOptimWrapper
 from mmengine._strategy import FSDPStrategy
 from mmengine.dataset.sampler import DefaultSampler, InfiniteSampler
-from mmengine.visualization import LocalVisBackend
 from mmengine.visualization import TensorboardVisBackend
 
 # customize
@@ -28,7 +27,7 @@ from mgamdata.process.LoadBiomedicalData import LoadImageFromMHA, LoadMaskFromMH
 from mgamdata.dataset.AbdomenCT_1K.mm_dataset import (AbdomenCT_1K_Semi_Mha, AbdomenCT_1K_Precrop_Npz)
 from mgamdata.dataset.base import ParseID
 from mgamdata.mm.mmseg_Dev3D import Seg3DDataPreProcessor
-from mgamdata.mm.visualization import SegViser, BaseVisHook
+from mgamdata.mm.visualization import SegViser, BaseVisHook, LocalVisBackend
 from mgamdata.models.AutoWindow import PackSeg3DInputs_AutoWindow, ParseLabelDistribution
 
 
@@ -178,7 +177,6 @@ val_evaluator = test_evaluator = dict(
 
 data_preprocessor = dict(
     type=Seg3DDataPreProcessor,
-    size=size,
     pad_val=pad_val,
     seg_pad_val=seg_pad_val,
     test_cfg=dict(size=size),
