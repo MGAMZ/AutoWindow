@@ -3,7 +3,7 @@ with read_base():
     from .mgam import *
 
 from mgamdata.models.AutoWindow import ParalleledMultiWindowProcessing, AutoWindowStatusLoggerHook, AutoWindowLite
-from mgamdata.models.UNETR import UNETR
+from mgamdata.models.UNet3Plus import UNet3Plus
 from mgamdata.mm.mmseg_Dev3D import DiceLoss_3D
 
 # custom_hooks = [
@@ -34,11 +34,12 @@ model = dict(
     inference_PatchStride=[s//2 for s in size],
     inference_PatchAccumulateDevice='cpu',
     backbone=dict(
-        type=UNETR,
-        in_channels=in_channels*num_windows, # pyright: ignore
-        out_channels=num_classes,
-        img_size=size,
-        use_flash_attention=True,
+        type=UNet3Plus,
+        input_shape=(in_channels*num_windows, *size), # pyright: ignore
+        output_channels=num_classes,
+        filters=[16, 32, 32, 32, 64],
+        dim=3,
+        use_torch_checkpoint=True
     ),
     criterion=dict(
         type=DiceLoss_3D,
