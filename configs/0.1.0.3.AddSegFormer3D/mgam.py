@@ -36,7 +36,7 @@ from mgamdata.models.AutoWindow import PackSeg3DInputs_AutoWindow, ParseLabelDis
 # --------------------PARAMETERS-------------------- #
 
 # PyTorch
-debug = True   # 调试模式
+debug = False   # 调试模式
 use_AMP = True  # AMP加速
 dist = False if not debug else False  # 分布式使能
 MP_mode = "ddp"  # 分布式计算模式 Literal[`"ddp", "fsdp", "deepspeed"]
