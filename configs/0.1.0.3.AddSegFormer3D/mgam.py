@@ -50,7 +50,7 @@ resume_optimizer = True
 resume_param_scheduler = True
 
 # Dataset
-pre_crop_data_root = '/mnt/h/mgam_datasets/AbdomenCT_1K/spacingZ2_sizeXY256_crop80_npz/'
+pre_crop_data_root = '/mnt/h/mgam_datasets/AbdomenCT_1K/spacingZ2_sizeXY256_cropZ32_npz/'
 mha_data_root = '/mnt/h/mgam_datasets/AbdomenCT_1K/spacingZ2_sizeXY256_mha/'
 num_classes = 5
 val_sample_ratio = 1.0 if not debug else 0.1
@@ -87,9 +87,11 @@ val_interval = 100 if not debug else 2
 vis_interval = 100
 # dynamic_intervals = None
 dynamic_intervals = [ # 动态验证间隔
-    (5, 100),
-    (150, 1000),
-    (2500, 5000)
+    (5, 50),
+    (100, 100),
+    (300, 500),
+    (2000, 1000),
+    (5000, 5000)
 ]
 
 # --------------------PARAMETERS-------------------- #
