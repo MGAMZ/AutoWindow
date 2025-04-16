@@ -65,7 +65,7 @@ batch_size = 2
 grad_accumulation = 4
 weight_decay = 1e-2
 in_channels = 1
-size = (80,80,80)
+size = (32,256,256)
 
 # PMWP Sub-Network Hyperparameters
 data_range = [-1024,3072]

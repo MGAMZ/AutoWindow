@@ -13,7 +13,6 @@ from mgamdata.mm.mmseg_Dev3D import DiceLoss_3D
 # ]
 
 # 神经网络设定
-assert size[0] == size[1] == size[2], f"SegFormer3D official implementation only supports cubic input, but got {size}"
 model = dict(
     type=AutoWindowLite,
     # pmwp=dict(
@@ -30,7 +29,6 @@ model = dict(
     #     lr_mult=pmwp_lr_mult,
     # ),
     binary_segment_threshold=None,
-    auto_activate_after_logits=True,
     inference_PatchSize=size,
     inference_PatchStride=[s//2 for s in size],
     inference_PatchAccumulateDevice='cpu',
@@ -46,7 +44,6 @@ model = dict(
     ),
     criterion=dict(
         type=DiceLoss_3D,
-        batch_z=None,
         ignore_1st_index=False,
         ignore_index=None,
     )
