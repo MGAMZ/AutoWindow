@@ -37,7 +37,7 @@ model = dict(
         type=SegFormer3D,
         in_channels=in_channels, # pyright: ignore
         num_classes=num_classes,
-        embed_dims=[512, 1024, 1024, 2048],
+        embed_dims=[1024, 1024, 1024, 2048],
         num_heads=[4, 4, 8, 16],
         depths=[2, 4, 2, 2],
         mlp_ratios=[1, 1, 1, 1],
@@ -45,7 +45,6 @@ model = dict(
     ),
     criterion=dict(
         type=DiceLoss_3D,
-        batch_z=None,
         ignore_1st_index=False,
         ignore_index=None,
     )
