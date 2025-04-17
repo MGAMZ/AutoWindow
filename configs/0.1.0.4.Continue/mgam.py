@@ -44,10 +44,10 @@ Compile = True if not debug else False  # torch.dynamo
 workers = 4 if not debug else 0  # DataLoader Worker
 
 # Starting
-resume = True
-load_from = None
+resume = False
+load_from = '/mnt/h/mgam_projects/AutoWindow/work_dirs/0.1.0.3.AddSegFormer3D/SegFormer3D/iter_160000.pth'
 resume_optimizer = True
-resume_param_scheduler = False
+resume_param_scheduler = True
 
 # Dataset
 pre_crop_data_root = '/mnt/h/mgam_datasets/AbdomenCT_1K/spacingZ2_sizeXY256_cropZ32_npz/'
@@ -60,7 +60,7 @@ pad_val = 0
 seg_pad_val = 0
 
 # Neural Network Hyperparameters
-lr = 1e-4
+lr = 2e-4
 batch_size = 2
 grad_accumulation = 4
 weight_decay = 1e-2
