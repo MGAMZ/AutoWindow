@@ -1,7 +1,3 @@
-from mmengine.config import read_base
-with read_base():
-    from ..base_totalsegmentator_dataset import *
-
 from torch.optim.adamw import AdamW
 from torch.distributed.fsdp.api import ShardingStrategy
 
@@ -74,7 +70,7 @@ num_windows = 4
 num_rect = 8
 pmwp_lr_mult = None
 TRec_rect_momentum = 0.999
-enable_WinE_loss = True
+enable_WinE_loss = False
 enable_TRec = True
 enable_TRec_loss = False
 enable_CWF = True

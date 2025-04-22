@@ -70,7 +70,7 @@ size = (32,256,256)
 
 # PMWP Sub-Network Hyperparameters
 data_range = [-1024,3072]
-num_windows = 4
+num_windows = 8
 num_rect = 8
 pmwp_lr_mult = None
 TRec_rect_momentum = 0.999
