@@ -28,10 +28,12 @@ model = dict(
     #     enable_CWF=enable_CWF,
     #     lr_mult=pmwp_lr_mult,
     # ),
+    num_classes=num_classes,
     binary_segment_threshold=None,
     inference_PatchSize=size,
     inference_PatchStride=[s//2 for s in size],
     inference_PatchAccumulateDevice='cpu',
+    inference_EmptyCache=False,
     backbone=dict(
         type=SegFormer3D,
         in_channels=in_channels, # pyright: ignore
