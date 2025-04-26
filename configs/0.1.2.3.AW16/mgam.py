@@ -49,7 +49,7 @@ resume_optimizer = True
 resume_param_scheduler = True
 
 # Dataset
-pre_crop_data_root = '/mnt/h/mgam_datasets/CTSpine1K/spacingZ2_sizeXY160_crop_Z64_mha/'
+pre_crop_data_root = '/mnt/h/mgam_datasets/CTSpine1K/spacingZ2_sizeXY160_cropZ64_mha/'
 mha_data_root = '/mnt/h/mgam_datasets/CTSpine1K/spacingZ2_sizeXY160_mha/'
 num_classes = 26
 val_sample_ratio = 1.0 if not debug else 0.1
