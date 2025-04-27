@@ -45,13 +45,14 @@ workers = 4 if not debug else 0  # DataLoader Worker
 
 # Starting
 resume = True
+# load_from = '/mnt/h/mgam_projects/AutoWindow/work_dirs/0.1.0.4.Continue/SegFormer3D/best_Perf_mDice_iter_155000.pth'
 load_from = None
 resume_optimizer = True
-resume_param_scheduler = False
+resume_param_scheduler = True
 
 # Dataset
-pre_crop_data_root = '/mnt/h/mgam_datasets/AbdomenCT_1K/spacingZ2_sizeXY256_cropZ32_npz/'
-mha_data_root = '/mnt/h/mgam_datasets/AbdomenCT_1K/spacingZ2_sizeXY256_mha/'
+pre_crop_data_root = '/mnt/h/mgam_datasets/AbdomenCT_1K/spacingZ2_sizeXY256_LPI_cropZ32_npz/'
+mha_data_root = '/mnt/h/mgam_datasets/AbdomenCT_1K/spacingZ2_sizeXY256_LPI_mha/'
 num_classes = 5
 val_sample_ratio = 1.0 if not debug else 0.1
 wl = 40     # window loacation
@@ -60,9 +61,9 @@ pad_val = 0
 seg_pad_val = 0
 
 # Neural Network Hyperparameters
-lr = 1e-4
-batch_size = 2
-grad_accumulation = 4
+lr = 2e-4
+batch_size = 4
+grad_accumulation = 2
 weight_decay = 1e-2
 in_channels = 1
 size = (32,256,256)
@@ -75,11 +76,11 @@ pmwp_lr_mult = None
 TRec_rect_momentum = 0.999
 enable_WinE_loss = True
 enable_TRec = True
-enable_TRec_loss = True
+enable_TRec_loss = False
 enable_CWF = True
 
 # Training Strategy
-iters = 1000000 if not debug else 3
+iters = 100000 if not debug else 3
 logger_interval = 100 if not debug else 1
 save_interval = 5000 if not debug else 2
 val_on_train = True
@@ -103,7 +104,7 @@ dynamic_intervals = [ # 动态验证间隔
 train_pipeline = [
     dict(type=LoadCTPreCroppedSampleFromNpz, load_type=['img', 'anno']),
     dict(type=ParseLabelDistribution),
-    dict(type=WindowSet, location=wl, width=ww),
+    # dict(type=WindowSet, location=wl, width=ww),
     # dict(type=InstanceNorm),
     dict(type=PackSeg3DInputs_AutoWindow)
 ]
@@ -112,7 +113,7 @@ val_pipeline = test_pipeline = [
     dict(type=LoadImageFromMHA),
     dict(type=LoadMaskFromMHA),
     dict(type=ParseLabelDistribution),
-    dict(type=WindowSet, location=wl, width=ww),
+    # dict(type=WindowSet, location=wl, width=ww),
     # dict(type=InstanceNorm),
     dict(type=PackSeg3DInputs_AutoWindow)
 ]
@@ -261,7 +262,6 @@ default_hooks = dict(
 visualizer = dict(
     type=SegViser,
     vis_backends=[dict(type=LocalVisBackend), dict(type=TensorboardVisBackend)],
-    plt_invert=True,
     dim=3)
 
 # torch.dynamo

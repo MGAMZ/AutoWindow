@@ -25,10 +25,9 @@ from mgamdata.mm.mmseg_PlugIn import IoUMetric_PerClass
 from mgamdata.mm.mmeng_PlugIn import RemasteredDDP, RatioSampler, LoggerJSON, mgam_OptimWrapperConstructor, RemasteredFSDP_Strategy
 from mgamdata.mm.mmseg_Dev3D import Seg3DDataPreProcessor
 from mgamdata.mm.visualization import SegViser, BaseVisHook, LocalVisBackend
-from mgamdata.process.GeneralPreProcess import WindowSet, TypeConvert, InstanceNorm
+from mgamdata.process.GeneralPreProcess import WindowSet, InstanceNorm
 from mgamdata.process.LoadBiomedicalData import LoadImageFromMHA, LoadMaskFromMHA, LoadCTPreCroppedSampleFromNpz
-from mgamdata.dataset.AbdomenCT_1K.mm_dataset import AbdomenCT_1K_Semi_Mha, AbdomenCT_1K_Precrop_Npz
-from mgamdata.dataset.base import ParseID
+from mgamdata.dataset.CTSpine1K import CTSpine1K_Mha, CTSpine1K_Precrop_Npz
 from mgamdata.models.AutoWindow import PackSeg3DInputs_AutoWindow, ParseLabelDistribution
 
 
@@ -47,25 +46,25 @@ workers = 4 if not debug else 0  # DataLoader Worker
 resume = True
 load_from = None
 resume_optimizer = True
-resume_param_scheduler = False
+resume_param_scheduler = True
 
 # Dataset
-pre_crop_data_root = '/mnt/h/mgam_datasets/AbdomenCT_1K/spacingZ2_sizeXY256_cropZ32_npz/'
-mha_data_root = '/mnt/h/mgam_datasets/AbdomenCT_1K/spacingZ2_sizeXY256_mha/'
-num_classes = 5
+pre_crop_data_root = '/mnt/h/mgam_datasets/CTSpine1K/spacingZ2_sizeXY160_cropZ64_mha/'
+mha_data_root = '/mnt/h/mgam_datasets/CTSpine1K/spacingZ2_sizeXY160_mha/'
+num_classes = 26
 val_sample_ratio = 1.0 if not debug else 0.1
-wl = 40     # window loacation
-ww = 400    # window width
+wl = 500     # window loacation
+ww = 1000    # window width
 pad_val = 0
 seg_pad_val = 0
 
 # Neural Network Hyperparameters
-lr = 1e-4
-batch_size = 2
-grad_accumulation = 4
+lr = 2e-4
+batch_size = 4
+grad_accumulation = 2
 weight_decay = 1e-2
 in_channels = 1
-size = (32,256,256)
+size = (64,160,160)
 
 # PMWP Sub-Network Hyperparameters
 data_range = [-1024,3072]
@@ -73,13 +72,13 @@ num_windows = 4
 num_rect = 8
 pmwp_lr_mult = None
 TRec_rect_momentum = 0.999
-enable_WinE_loss = True
+enable_WinE_loss = False
 enable_TRec = True
-enable_TRec_loss = True
+enable_TRec_loss = False
 enable_CWF = True
 
 # Training Strategy
-iters = 1000000 if not debug else 3
+iters = 100000 if not debug else 3
 logger_interval = 100 if not debug else 1
 save_interval = 5000 if not debug else 2
 val_on_train = True
@@ -103,8 +102,8 @@ dynamic_intervals = [ # 动态验证间隔
 train_pipeline = [
     dict(type=LoadCTPreCroppedSampleFromNpz, load_type=['img', 'anno']),
     dict(type=ParseLabelDistribution),
-    dict(type=WindowSet, location=wl, width=ww),
-    # dict(type=InstanceNorm),
+    # dict(type=WindowSet, level=wl, width=ww),
+    dict(type=InstanceNorm),
     dict(type=PackSeg3DInputs_AutoWindow)
 ]
 
@@ -112,8 +111,8 @@ val_pipeline = test_pipeline = [
     dict(type=LoadImageFromMHA),
     dict(type=LoadMaskFromMHA),
     dict(type=ParseLabelDistribution),
-    dict(type=WindowSet, location=wl, width=ww),
-    # dict(type=InstanceNorm),
+    # dict(type=WindowSet, level=wl, width=ww),
+    dict(type=InstanceNorm),
     dict(type=PackSeg3DInputs_AutoWindow)
 ]
 
@@ -128,7 +127,7 @@ train_dataloader = dict(
         type=InfiniteSampler,
         shuffle=False if debug else True),
     dataset=dict(
-        type=AbdomenCT_1K_Precrop_Npz,
+        type=CTSpine1K_Precrop_Npz,
         split='train',
         mode='sup',
         data_root_mha=mha_data_root,
@@ -147,7 +146,7 @@ val_dataloader = dict(
         shuffle=False,
         use_sample_ratio=val_sample_ratio),
     dataset=dict(
-        type=AbdomenCT_1K_Semi_Mha,
+        type=CTSpine1K_Mha,
         split='val',
         data_root_mha=mha_data_root,
         data_root=mha_data_root,
@@ -162,7 +161,7 @@ test_dataloader = dict(
     persistent_workers=True if workers > 0 else False,
     sampler=dict(type=DefaultSampler, shuffle=False),
     dataset=dict(
-        type=AbdomenCT_1K_Semi_Mha,
+        type=CTSpine1K_Mha,
         split='test',
         data_root_mha=mha_data_root,
         data_root=mha_data_root,
@@ -261,7 +260,6 @@ default_hooks = dict(
 visualizer = dict(
     type=SegViser,
     vis_backends=[dict(type=LocalVisBackend), dict(type=TensorboardVisBackend)],
-    plt_invert=True,
     dim=3)
 
 # torch.dynamo
