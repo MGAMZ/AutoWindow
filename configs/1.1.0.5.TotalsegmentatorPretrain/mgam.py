@@ -51,10 +51,10 @@ resume_param_scheduler = True
 # Dataset
 pre_crop_data_root = '/home/zhangyq.sx/mgam_datasets/Totalsegmentator/spacing_Z2_mha/'
 mha_data_root = '/home/zhangyq.sx/mgam_datasets/Totalsegmentator/spacing_Z2_mha/'
-num_classes = 119
+num_classes = 5
 val_sample_ratio = 1.0 if not debug else 0.1
-wl = 0     # window loacation
-ww = 1000    # window width
+wl = 40     # window loacation
+ww = 800    # window width
 pad_val = 0
 seg_pad_val = 0
 
