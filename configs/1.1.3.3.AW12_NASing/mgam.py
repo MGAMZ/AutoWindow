@@ -40,7 +40,7 @@ use_AMP = True  # AMP加速
 dist = True if not debug else False  # 分布式使能
 MP_mode = "ddp"  # 分布式计算模式 Literal[`"ddp", "fsdp", "deepspeed"]
 Compile = True if not debug else False  # torch.dynamo
-workers = 4 if not debug else 0  # DataLoader Worker
+workers = 3 if not debug else 0  # DataLoader Worker
 
 # Starting
 resume = True
@@ -61,7 +61,7 @@ seg_pad_val = 0
 
 # Neural Network Hyperparameters
 lr = 2e-4
-batch_size = 4
+batch_size = 2
 grad_accumulation = 1
 weight_decay = 1e-2
 in_channels = 1
@@ -85,12 +85,11 @@ save_interval = 5000 if not debug else 2
 val_on_train = True
 val_interval = 500 if not debug else 2
 vis_interval = 100
-# dynamic_intervals = None
 dynamic_intervals = [ # 动态验证间隔
     (250, 500),
     (2000, 1000),
     (5000, 5000)
-]
+] if not debug else None
 
 # --------------------PARAMETERS-------------------- #
 # ////////////////////////////////////////////////// #

@@ -2,7 +2,6 @@ from mmengine.config import read_base
 with read_base():
     from .mgam import *
 
-import torch
 from mgamdata.models.AutoWindow import ParalleledMultiWindowProcessing, AutoWindowStatusLoggerHook, AutoWindowLite
 from mgamdata.models.SegFormer3D.Remastered import SegFormer3D
 from mgamdata.mm.mmseg_Dev3D import DiceLoss_3D
