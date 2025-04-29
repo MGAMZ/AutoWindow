@@ -39,7 +39,7 @@ debug = False   # 调试模式
 use_AMP = True  # AMP加速
 dist = True if not debug else False  # 分布式使能
 MP_mode = "ddp"  # 分布式计算模式 Literal[`"ddp", "fsdp", "deepspeed"]
-Compile = True if not debug else False  # torch.dynamo
+Compile = False if not debug else False  # torch.dynamo
 workers = 3 if not debug else 0  # DataLoader Worker
 
 # Starting
