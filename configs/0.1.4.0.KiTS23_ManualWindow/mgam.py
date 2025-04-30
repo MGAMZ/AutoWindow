@@ -49,9 +49,9 @@ resume_optimizer = True
 resume_param_scheduler = True
 
 # Dataset
-pre_crop_data_root = '/mnt/h/mgam_datasets/AbdomenCT_1K/spacingZ2_sizeXY256_LPI_cropZ32_npz'
-mha_data_root = '/mnt/h/mgam_datasets/AbdomenCT_1K/spacingZ2_sizeXY256_LPI_mha'
-num_classes = 5
+pre_crop_data_root = '/mnt/h/mgam_datasets/KiTS23/spacingZ2_sizeXY256_cropZ16_npz/'
+mha_data_root = '/mnt/h/mgam_datasets/KiTS23/spacingZ2_sizeXY256_mha/'
+num_classes = 4
 val_sample_ratio = 1.0 if not debug else 0.1
 wl = 0     # window loacation
 ww = 500    # window width
