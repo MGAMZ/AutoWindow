@@ -49,7 +49,7 @@ resume_optimizer = True
 resume_param_scheduler = True
 
 # Dataset
-pre_crop_data_root = '/zyq_local/mgam_datasets/Totalsegmentator/spacingZ2_sizeXY256_cropZ32_npz/'
+pre_crop_data_root = '/zyq_local/mgam_datasets/Totalsegmentator/spacingZ2_sizeXY256_cropZ16_npz/'
 mha_data_root = '/zyq_local/mgam_datasets/Totalsegmentator/spacingZ2_sizeXY256_mha/'
 tsd_meta = '/zyq_remote/mgam_datasets/Totalsegmentator/meta_v2.csv'
 num_classes = 119
@@ -65,7 +65,7 @@ batch_size = 2
 grad_accumulation = 1
 weight_decay = 1e-2
 in_channels = 1
-size = (32,256,256)
+size = (16,256,256)
 
 # PMWP Sub-Network Hyperparameters
 data_range = [-1024,3072]
