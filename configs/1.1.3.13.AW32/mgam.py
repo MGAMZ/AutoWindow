@@ -61,7 +61,7 @@ seg_pad_val = 0
 
 # Neural Network Hyperparameters
 lr = 1e-5
-batch_size = 2
+batch_size = 4
 grad_accumulation = 1
 weight_decay = 1e-2
 in_channels = 1
