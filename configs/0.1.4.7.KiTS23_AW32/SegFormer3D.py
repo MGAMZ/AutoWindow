@@ -33,22 +33,23 @@ model = dict(
     inference_PatchSize=size,
     inference_PatchStride=[s//2 for s in size],
     inference_PatchAccumulateDevice='cpu',
+    inference_EmptyCache=False,
     backbone=dict(
         type=SegFormer3D,
-        in_channels=in_channels if num_windows is None else in_channels*num_windows, # pyright: ignore
+        in_channels=in_channels, # pyright: ignore
         num_classes=num_classes,
-        embed_dims=[512, 1024, 1024, 2048],
-        num_heads=[16, 32, 32, 64],
-        depths=[1, 1, 2, 2],
+        embed_dims=[64, 64, 128, 128],
+        num_heads=[4, 4, 8, 8],
+        depths=[2, 2, 2, 2],
         mlp_ratios=[1, 1, 1, 1],
         sr_ratios=[(4,4,4), (2,2,2), (1,2,2), (1,2,2)],
-        decoder_head_embedding_dim=1024,
+        decoder_head_embedding_dim=64,
     ),
     criterion=dict(
         type=DiceLoss_3D,
         expand_one_hot=True,
         use_sigmoid=False,
         use_softmax=True,
-        split_Z=True,
+        split_Z=False,
     )
 )
