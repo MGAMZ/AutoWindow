@@ -41,14 +41,18 @@ model = dict(
         num_heads=[16, 32, 32, 64],
         depths=[1, 1, 2, 2],
         mlp_ratios=[1, 1, 1, 1],
-        sr_ratios=[(4,4,4), (2,2,2), (1,2,2), (1,2,2)],
-        decoder_head_embedding_dim=1024,
+        sr_ratios=[(2,2,2), (2,2,2), (1,1,1), (1,1,1)],
+        patch_kernel_size=[(3,7,7), (3,3,3), (1,3,3), (1,3,3)],
+        patch_stride=[(2,4,4), (2,2,2), (1,2,2), (1,2,2)],
+        patch_padding=[(1,3,3), (1,1,1), (0,1,1), (0,1,1)],
+        decoder_head_embedding_dim=512,
     ),
     criterion=dict(
         type=DiceLoss_3D,
-        expand_one_hot=True,
-        use_sigmoid=False,
-        use_softmax=True,
         split_Z=True,
+        to_onehot_y=True,
+        sigmoid=False,
+        softmax=True,
+        squared_pred=True,
     )
 )
