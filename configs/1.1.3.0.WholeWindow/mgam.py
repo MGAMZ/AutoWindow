@@ -1,7 +1,4 @@
-from mmengine.config import read_base
-with read_base():
-    from ..base_totalsegmentator_dataset import *
-
+from torch.optim.sgd import SGD
 from torch.optim.adamw import AdamW
 from torch.distributed.fsdp.api import ShardingStrategy
 
@@ -63,7 +60,7 @@ seg_pad_val = 0
 lr = 1e-5
 batch_size = 4
 grad_accumulation = 1
-weight_decay = 1e-3
+weight_decay = 1e-2
 in_channels = 1
 size = (8,256,256)
 
@@ -200,7 +197,7 @@ if not val_on_train:
 if MP_mode == "deepspeed" and dist:
     optim_wrapper = dict(
         type=DeepSpeedOptimWrapper,
-        optimizer=dict(type=AdamW, lr=lr, weight_decay=weight_decay),
+        optimizer=dict(type=SGD, lr=lr, weight_decay=weight_decay),
         accumulative_counts=grad_accumulation,
         constructor=dict(type=mgam_OptimWrapperConstructor),
     )
@@ -208,7 +205,7 @@ else:
     optim_wrapper = dict(
         type=AmpOptimWrapper if use_AMP else OptimWrapper,
         accumulative_counts=grad_accumulation,
-        optimizer=dict(type=AdamW, lr=lr, weight_decay=weight_decay),
+        optimizer=dict(type=SGD, lr=lr, weight_decay=weight_decay),
         clip_grad=dict(max_norm=5, norm_type=2, error_if_nonfinite=False),
         constructor=dict(type=mgam_OptimWrapperConstructor),
     )
