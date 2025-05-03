@@ -49,27 +49,27 @@ resume_optimizer = True
 resume_param_scheduler = True
 
 # Dataset
-pre_crop_data_root = '/zyq_local/mgam_datasets/Totalsegmentator/spacingZ2_sizeXY256_cropZ32_npz/'
+pre_crop_data_root = '/zyq_local/mgam_datasets/Totalsegmentator/spacingZ2_sizeXY256_cropZ16_npz/'
 mha_data_root = '/zyq_local/mgam_datasets/Totalsegmentator/spacingZ2_sizeXY256_mha/'
 tsd_meta = '/zyq_remote/mgam_datasets/Totalsegmentator/meta_v2.csv'
 num_classes = 119
 val_sample_ratio = 1.0 if not debug else 0.1
-wl = 300     # window loacation
-ww = 1000    # window width
+wl = 50     # window loacation
+ww = 400    # window width
 pad_val = 0
 seg_pad_val = 0
 
 # Neural Network Hyperparameters
-lr = 1e-4
-batch_size = 1
-grad_accumulation = 2
-weight_decay = 1e-2
+lr = 1e-5
+batch_size = 4
+grad_accumulation = 1
+weight_decay = 1e-3
 in_channels = 1
-size = (32,256,256)
+size = (16,256,256)
 
 # PMWP Sub-Network Hyperparameters
 data_range = [-1024,3072]
-num_windows = 8
+num_windows = None
 num_rect = 8
 pmwp_lr_mult = None
 TRec_rect_momentum = 0.999
@@ -101,7 +101,7 @@ dynamic_intervals = [ # 动态验证间隔
 train_pipeline = [
     dict(type=LoadCTPreCroppedSampleFromNpz, load_type=['img', 'anno']),
     dict(type=ParseLabelDistribution),
-    # dict(type=WindowSet, level=wl, width=ww),
+    dict(type=WindowSet, level=wl, width=ww),
     # dict(type=InstanceNorm),
     dict(type=PackSeg3DInputs_AutoWindow)
 ]
@@ -110,7 +110,7 @@ val_pipeline = test_pipeline = [
     dict(type=LoadImageFromMHA),
     dict(type=LoadMaskFromMHA),
     dict(type=ParseLabelDistribution),
-    # dict(type=WindowSet, level=wl, width=ww),
+    dict(type=WindowSet, level=wl, width=ww),
     # dict(type=InstanceNorm),
     dict(type=PackSeg3DInputs_AutoWindow)
 ]
