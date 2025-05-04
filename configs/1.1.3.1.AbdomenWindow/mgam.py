@@ -36,7 +36,7 @@ debug = False   # 调试模式
 use_AMP = True  # AMP加速
 dist = True if not debug else False  # 分布式使能
 MP_mode = "ddp"  # 分布式计算模式 Literal[`"ddp", "fsdp", "deepspeed"]
-Compile = True if not debug else False  # torch.dynamo
+Compile = False if not debug else False  # torch.dynamo
 workers = 4 if not debug else 0  # DataLoader Worker
 
 # Starting
@@ -57,7 +57,7 @@ pad_val = 0
 seg_pad_val = 0
 
 # Neural Network Hyperparameters
-lr = 1e-3
+lr = 1e-4
 batch_size = 4
 grad_accumulation = 1
 weight_decay = 0
@@ -200,7 +200,7 @@ if not val_on_train:
 if MP_mode == "deepspeed" and dist:
     optim_wrapper = dict(
         type=DeepSpeedOptimWrapper,
-        optimizer=dict(type=SGD, lr=lr, weight_decay=weight_decay),
+        optimizer=dict(type=AdamW, lr=lr, weight_decay=weight_decay),
         accumulative_counts=grad_accumulation,
         constructor=dict(type=mgam_OptimWrapperConstructor),
     )
@@ -208,7 +208,7 @@ else:
     optim_wrapper = dict(
         type=AmpOptimWrapper if use_AMP else OptimWrapper,
         accumulative_counts=grad_accumulation,
-        optimizer=dict(type=SGD, lr=lr, weight_decay=weight_decay),
+        optimizer=dict(type=AdamW, lr=lr, weight_decay=weight_decay),
         clip_grad=dict(max_norm=5, norm_type=2, error_if_nonfinite=False),
         constructor=dict(type=mgam_OptimWrapperConstructor),
     )

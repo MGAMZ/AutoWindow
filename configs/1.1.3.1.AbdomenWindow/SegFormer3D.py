@@ -37,7 +37,7 @@ model = dict(
         type=SegFormer3D,
         in_channels=in_channels if num_windows is None else in_channels*num_windows, # pyright: ignore
         num_classes=num_classes,
-        embed_dims=[128, 256, 512, 1024],
+        embed_dims=[256, 512, 1024, 1024],
         num_heads=[4, 8, 16, 32],
         depths=[2, 2, 2, 2],
         mlp_ratios=[2, 2, 2, 2],
@@ -45,7 +45,7 @@ model = dict(
         patch_kernel_size=[(3,7,7), (3,3,3), (1,3,3), (1,3,3)],
         patch_stride=[(2,4,4), (2,2,2), (1,2,2), (1,2,2)],
         patch_padding=[(1,3,3), (1,1,1), (0,1,1), (0,1,1)],
-        decoder_head_embedding_dim=256,
+        decoder_head_embedding_dim=512,
     ),
     criterion=dict(
         type=DiceLoss_3D,
