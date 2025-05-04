@@ -46,8 +46,8 @@ resume_optimizer = True
 resume_param_scheduler = True
 
 # Dataset
-pre_crop_data_root = '/zyq_local/mgam_datasets/Totalsegmentator/spacingZ2_sizeXY256_cropZ8_npz/'
-mha_data_root = '/zyq_local/mgam_datasets/Totalsegmentator/spacingZ2_sizeXY256_mha/'
+pre_crop_data_root = '/zyq_local/mgam_datasets/Totalsegmentator/spacing2_crop64-96-96_npz/'
+mha_data_root = '/zyq_local/mgam_datasets/Totalsegmentator/spacing2_mha/'
 tsd_meta = '/zyq_remote/mgam_datasets/Totalsegmentator/meta_v2.csv'
 num_classes = 45
 val_sample_ratio = 1.0 if not debug else 0.1
@@ -62,7 +62,7 @@ batch_size = 4
 grad_accumulation = 1
 weight_decay = 0
 in_channels = 1
-size = (8,256,256)
+size = (64,96,96)
 
 # PMWP Sub-Network Hyperparameters
 data_range = [-1024,3072]
@@ -76,7 +76,7 @@ enable_TRec_loss = False
 enable_CWF = True
 
 # Training Strategy
-iters = 100000 if not debug else 3
+iters = 500000 if not debug else 3
 logger_interval = 100 if not debug else 1
 save_interval = 5000 if not debug else 2
 val_on_train = True
