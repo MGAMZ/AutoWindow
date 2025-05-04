@@ -54,5 +54,6 @@ model = dict(
         sigmoid=False,
         softmax=True,
         squared_pred=True,
+        include_background=False,
     )
 )
