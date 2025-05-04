@@ -24,7 +24,7 @@ from mgamdata.mm.mmseg_Dev3D import Seg3DDataPreProcessor
 from mgamdata.mm.visualization import SegViser, BaseVisHook, LocalVisBackend
 from mgamdata.process.GeneralPreProcess import WindowSet, InstanceNorm
 from mgamdata.process.LoadBiomedicalData import LoadImageFromMHA, LoadMaskFromMHA, LoadCTPreCroppedSampleFromNpz
-from mgamdata.dataset.Totalsegmentator import Tsd3D_PreCrop_Npz, Tsd_Mha
+from mgamdata.dataset.Totalsegmentator import Tsd3D_PreCrop_Npz, Tsd_Mha, TSD_CLASS_INDEX_MAP_GENERAL_REDUCTED
 from mgamdata.models.AutoWindow import PackSeg3DInputs_AutoWindow, ParseLabelDistribution
 
 
@@ -49,7 +49,7 @@ resume_param_scheduler = True
 pre_crop_data_root = '/zyq_local/mgam_datasets/Totalsegmentator/spacingZ2_sizeXY256_cropZ8_npz/'
 mha_data_root = '/zyq_local/mgam_datasets/Totalsegmentator/spacingZ2_sizeXY256_mha/'
 tsd_meta = '/zyq_remote/mgam_datasets/Totalsegmentator/meta_v2.csv'
-num_classes = 119
+num_classes = 45
 val_sample_ratio = 1.0 if not debug else 0.1
 wl = 50     # window loacation
 ww = 400    # window width
@@ -127,6 +127,7 @@ train_dataloader = dict(
         split='train',
         meta_csv=tsd_meta,
         data_root=pre_crop_data_root,
+        class_reduction=TSD_CLASS_INDEX_MAP_GENERAL_REDUCTED,
         pipeline=train_pipeline,
         debug=debug,
     ),
@@ -144,6 +145,7 @@ val_dataloader = dict(
         type=Tsd_Mha,
         split='val',
         data_root=mha_data_root,
+        class_reduction=TSD_CLASS_INDEX_MAP_GENERAL_REDUCTED,
         meta_csv=tsd_meta,
         pipeline=val_pipeline,
         debug=debug,
@@ -159,6 +161,7 @@ test_dataloader = dict(
         type=Tsd_Mha,
         split='test',
         data_root=mha_data_root,
+        class_reduction=TSD_CLASS_INDEX_MAP_GENERAL_REDUCTED,
         meta_csv=tsd_meta,
         pipeline=test_pipeline,
         debug=debug,
