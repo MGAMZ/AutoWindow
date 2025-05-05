@@ -37,15 +37,15 @@ model = dict(
         type=SegFormer3D,
         in_channels=in_channels if num_windows is None else in_channels*num_windows, # pyright: ignore
         num_classes=num_classes,
-        embed_dims=[256, 512, 1024, 1024],
+        embed_dims=[128, 256, 512, 1024],
         num_heads=[4, 8, 16, 32],
         depths=[2, 2, 2, 2],
         mlp_ratios=[2, 2, 2, 2],
         sr_ratios=[4, 2, 2, 1],
-        patch_kernel_size=[3, 3, 3, 3],
-        patch_stride=[2, 2, 2, 2],
-        patch_padding=[1, 1, 1, 1],
-        decoder_head_embedding_dim=512,
+        patch_kernel_size=[7, 3, 3, 3],
+        patch_stride=[3, 2, 2, 2],
+        patch_padding=[2, 1, 1, 1],
+        decoder_head_embedding_dim=128,
     ),
     criterion=dict(
         type=DiceLoss_3D,
@@ -54,6 +54,6 @@ model = dict(
         sigmoid=False,
         softmax=True,
         squared_pred=True,
-        include_background=False,
+        include_background=True,
     )
 )
