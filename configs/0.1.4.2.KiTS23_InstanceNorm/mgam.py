@@ -27,20 +27,20 @@ from mgamdata.mm.mmseg_Dev3D import Seg3DDataPreProcessor
 from mgamdata.mm.visualization import SegViser, BaseVisHook, LocalVisBackend
 from mgamdata.process.GeneralPreProcess import WindowSet, InstanceNorm
 from mgamdata.process.LoadBiomedicalData import LoadImageFromMHA, LoadMaskFromMHA, LoadCTPreCroppedSampleFromNpz
-from mgamdata.dataset.Totalsegmentator import Tsd3D_PreCrop_Npz, Tsd_Mha
+from mgamdata.dataset.KiTS23 import KiTS23_Precrop_Npz, KiTS23_Mha
 from mgamdata.models.AutoWindow import PackSeg3DInputs_AutoWindow, ParseLabelDistribution
 
 
 
-# --------------------PARAMETERS-------------------- #
+# -------------------- PARAMETERS -------------------- #
 
 # PyTorch
 debug = False   # 调试模式
 use_AMP = True  # AMP加速
-dist = True if not debug else False  # 分布式使能
+dist = False if not debug else False  # 分布式使能
 MP_mode = "ddp"  # 分布式计算模式 Literal[`"ddp", "fsdp", "deepspeed"]
 Compile = True if not debug else False  # torch.dynamo
-workers = 3 if not debug else 0  # DataLoader Worker
+workers = 4 if not debug else 0  # DataLoader Worker
 
 # Starting
 resume = True
@@ -49,27 +49,26 @@ resume_optimizer = True
 resume_param_scheduler = True
 
 # Dataset
-pre_crop_data_root = '/home/zhangyq.sx/mgam_datasets/Totalsegmentator/spacingZ2_sizeXY256_cropZ32_npz/'
-mha_data_root = '/home/zhangyq.sx/mgam_datasets/Totalsegmentator/spacingZ2_sizeXY256_mha/'
-tsd_meta = '/zyq_remote/mgam_datasets/Totalsegmentator/meta_v2.csv'
-num_classes = 119
+pre_crop_data_root = '/mnt/h/mgam_datasets/KiTS23/spacingZ2_sizeXY256_cropZ16_npz/'
+mha_data_root = '/mnt/h/mgam_datasets/KiTS23/spacingZ2_sizeXY256_mha/'
+num_classes = 4
 val_sample_ratio = 1.0 if not debug else 0.1
-wl = 300     # window loacation
-ww = 1000    # window width
+wl = 35     # window loacation
+ww = 250    # window width
 pad_val = 0
 seg_pad_val = 0
 
 # Neural Network Hyperparameters
-lr = 1e-4
-batch_size = 2
+lr = 5e-4
+batch_size = 24
 grad_accumulation = 1
 weight_decay = 1e-2
 in_channels = 1
-size = (32,256,256)
+size = (16,256,256)
 
 # PMWP Sub-Network Hyperparameters
 data_range = [-1024,3072]
-num_windows = 12
+num_windows = None
 num_rect = 8
 pmwp_lr_mult = None
 TRec_rect_momentum = 0.999
@@ -83,13 +82,16 @@ iters = 100000 if not debug else 3
 logger_interval = 100 if not debug else 1
 save_interval = 5000 if not debug else 2
 val_on_train = True
-val_interval = 500 if not debug else 2
+val_interval = 100 if not debug else 2
 vis_interval = 100
+# dynamic_intervals = None
 dynamic_intervals = [ # 动态验证间隔
-    (250, 500),
+    (5, 50),
+    (100, 100),
+    (300, 500),
     (2000, 1000),
     (5000, 5000)
-] if not debug else None
+]
 
 # --------------------PARAMETERS-------------------- #
 # ////////////////////////////////////////////////// #
@@ -101,7 +103,7 @@ train_pipeline = [
     dict(type=LoadCTPreCroppedSampleFromNpz, load_type=['img', 'anno']),
     dict(type=ParseLabelDistribution),
     # dict(type=WindowSet, level=wl, width=ww),
-    # dict(type=InstanceNorm),
+    dict(type=InstanceNorm),
     dict(type=PackSeg3DInputs_AutoWindow)
 ]
 
@@ -110,7 +112,7 @@ val_pipeline = test_pipeline = [
     dict(type=LoadMaskFromMHA),
     dict(type=ParseLabelDistribution),
     # dict(type=WindowSet, level=wl, width=ww),
-    # dict(type=InstanceNorm),
+    dict(type=InstanceNorm),
     dict(type=PackSeg3DInputs_AutoWindow)
 ]
 
@@ -125,9 +127,10 @@ train_dataloader = dict(
         type=InfiniteSampler,
         shuffle=False if debug else True),
     dataset=dict(
-        type=Tsd3D_PreCrop_Npz,
+        type=KiTS23_Precrop_Npz,
         split='train',
-        meta_csv=tsd_meta,
+        mode='sup',
+        data_root_mha=mha_data_root,
         data_root=pre_crop_data_root,
         pipeline=train_pipeline,
         debug=debug,
@@ -143,10 +146,10 @@ val_dataloader = dict(
         shuffle=False,
         use_sample_ratio=val_sample_ratio),
     dataset=dict(
-        type=Tsd_Mha,
+        type=KiTS23_Mha,
         split='val',
+        data_root_mha=mha_data_root,
         data_root=mha_data_root,
-        meta_csv=tsd_meta,
         pipeline=val_pipeline,
         debug=debug,
     ),
@@ -158,10 +161,10 @@ test_dataloader = dict(
     persistent_workers=True if workers > 0 else False,
     sampler=dict(type=DefaultSampler, shuffle=False),
     dataset=dict(
-        type=Tsd_Mha,
+        type=KiTS23_Mha,
         split='test',
+        data_root_mha=mha_data_root,
         data_root=mha_data_root,
-        meta_csv=tsd_meta,
         pipeline=test_pipeline,
         debug=debug,
     ),

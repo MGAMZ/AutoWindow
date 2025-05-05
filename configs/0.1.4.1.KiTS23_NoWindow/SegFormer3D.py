@@ -10,7 +10,7 @@ custom_hooks = [
     dict(type=AutoWindowStatusLoggerHook,
          dpi=100,
          interval=logger_interval),
-]
+] if num_windows is not None else []
 
 # 神经网络设定
 model = dict(
@@ -27,28 +27,29 @@ model = dict(
         enable_TRec_loss=enable_TRec_loss,
         enable_CWF=enable_CWF,
         lr_mult=pmwp_lr_mult,
-    ),
+    ) if num_windows is not None else None,
     num_classes=num_classes,
     binary_segment_threshold=None,
     inference_PatchSize=size,
     inference_PatchStride=[s//2 for s in size],
     inference_PatchAccumulateDevice='cpu',
+    inference_EmptyCache=False,
     backbone=dict(
         type=SegFormer3D,
-        in_channels=in_channels*num_windows, # pyright: ignore
+        in_channels=in_channels, # pyright: ignore
         num_classes=num_classes,
-        embed_dims=[256, 512, 512, 1024],
-        num_heads=[4, 8, 8, 16],
+        embed_dims=[64, 64, 128, 128],
+        num_heads=[4, 4, 8, 8],
         depths=[2, 2, 2, 2],
         mlp_ratios=[1, 1, 1, 1],
         sr_ratios=[(4,4,4), (2,2,2), (1,2,2), (1,2,2)],
-        decoder_head_embedding_dim=512,
+        decoder_head_embedding_dim=64,
     ),
     criterion=dict(
         type=DiceLoss_3D,
         expand_one_hot=True,
-        use_sigmoid=True,
-        use_softmax=False,
-        split_Z=True,
+        use_sigmoid=False,
+        use_softmax=True,
+        split_Z=False,
     )
 )

@@ -27,12 +27,12 @@ from mgamdata.mm.mmseg_Dev3D import Seg3DDataPreProcessor
 from mgamdata.mm.visualization import SegViser, BaseVisHook, LocalVisBackend
 from mgamdata.process.GeneralPreProcess import WindowSet, InstanceNorm
 from mgamdata.process.LoadBiomedicalData import LoadImageFromMHA, LoadMaskFromMHA, LoadCTPreCroppedSampleFromNpz
-from mgamdata.dataset.AbdomenCT_1K import AbdomenCT_1K_Precrop_Npz, AbdomenCT_1K_Semi_Mha
+from mgamdata.dataset.KiTS23 import KiTS23_Precrop_Npz, KiTS23_Mha
 from mgamdata.models.AutoWindow import PackSeg3DInputs_AutoWindow, ParseLabelDistribution
 
 
 
-# --------------------PARAMETERS-------------------- #
+# -------------------- PARAMETERS -------------------- #
 
 # PyTorch
 debug = False   # 调试模式
@@ -49,22 +49,22 @@ resume_optimizer = True
 resume_param_scheduler = True
 
 # Dataset
-pre_crop_data_root = '/mnt/h/mgam_datasets/AbdomenCT_1K/spacingZ2_sizeXY256_LPI_cropZ32_npz'
-mha_data_root = '/mnt/h/mgam_datasets/AbdomenCT_1K/spacingZ2_sizeXY256_LPI_mha'
-num_classes = 5
+pre_crop_data_root = '/mnt/h/mgam_datasets/KiTS23/spacingZ2_sizeXY256_cropZ16_npz/'
+mha_data_root = '/mnt/h/mgam_datasets/KiTS23/spacingZ2_sizeXY256_mha/'
+num_classes = 4
 val_sample_ratio = 1.0 if not debug else 0.1
-wl = 0     # window loacation
-ww = 500    # window width
+wl = 35     # window loacation
+ww = 250    # window width
 pad_val = 0
 seg_pad_val = 0
 
 # Neural Network Hyperparameters
-lr = 2e-4
-batch_size = 4
+lr = 5e-4
+batch_size = 24
 grad_accumulation = 1
 weight_decay = 1e-2
 in_channels = 1
-size = (32,256,256)
+size = (16,256,256)
 
 # PMWP Sub-Network Hyperparameters
 data_range = [-1024,3072]
@@ -102,7 +102,7 @@ dynamic_intervals = [ # 动态验证间隔
 train_pipeline = [
     dict(type=LoadCTPreCroppedSampleFromNpz, load_type=['img', 'anno']),
     dict(type=ParseLabelDistribution),
-    dict(type=WindowSet, level=wl, width=ww),
+    # dict(type=WindowSet, level=wl, width=ww),
     # dict(type=InstanceNorm),
     dict(type=PackSeg3DInputs_AutoWindow)
 ]
@@ -111,7 +111,7 @@ val_pipeline = test_pipeline = [
     dict(type=LoadImageFromMHA),
     dict(type=LoadMaskFromMHA),
     dict(type=ParseLabelDistribution),
-    dict(type=WindowSet, level=wl, width=ww),
+    # dict(type=WindowSet, level=wl, width=ww),
     # dict(type=InstanceNorm),
     dict(type=PackSeg3DInputs_AutoWindow)
 ]
@@ -127,7 +127,7 @@ train_dataloader = dict(
         type=InfiniteSampler,
         shuffle=False if debug else True),
     dataset=dict(
-        type=AbdomenCT_1K_Precrop_Npz,
+        type=KiTS23_Precrop_Npz,
         split='train',
         mode='sup',
         data_root_mha=mha_data_root,
@@ -146,7 +146,7 @@ val_dataloader = dict(
         shuffle=False,
         use_sample_ratio=val_sample_ratio),
     dataset=dict(
-        type=AbdomenCT_1K_Semi_Mha,
+        type=KiTS23_Mha,
         split='val',
         data_root_mha=mha_data_root,
         data_root=mha_data_root,
@@ -161,7 +161,7 @@ test_dataloader = dict(
     persistent_workers=True if workers > 0 else False,
     sampler=dict(type=DefaultSampler, shuffle=False),
     dataset=dict(
-        type=AbdomenCT_1K_Semi_Mha,
+        type=KiTS23_Mha,
         split='test',
         data_root_mha=mha_data_root,
         data_root=mha_data_root,
