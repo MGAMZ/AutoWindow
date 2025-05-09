@@ -47,7 +47,7 @@ model = dict(
     ),
     criterion=dict(
         type=DiceLoss_3D,
-        split_Z=True,
+        split_Z=False,
         to_onehot_y=True,
         sigmoid=False,
         softmax=True,
