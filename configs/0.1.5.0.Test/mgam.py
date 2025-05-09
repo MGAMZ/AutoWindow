@@ -35,7 +35,7 @@ from mgamdata.models.AutoWindow import PackSeg3DInputs_AutoWindow, ParseLabelDis
 # -------------------- PARAMETERS -------------------- #
 
 # PyTorch
-debug = False   # 调试模式
+debug = True   # 调试模式
 use_AMP = True  # AMP加速
 dist = False if not debug else False  # 分布式使能
 MP_mode = "ddp"  # 分布式计算模式 Literal[`"ddp", "fsdp", "deepspeed"]
@@ -60,7 +60,7 @@ seg_pad_val = 0
 
 # Neural Network Hyperparameters
 lr = 5e-4
-batch_size = 24
+batch_size = 8
 grad_accumulation = 1
 weight_decay = 1e-2
 in_channels = 1
