@@ -24,7 +24,7 @@ from mgamdata.mm.mmseg_Dev3D import Seg3DDataPreProcessor
 from mgamdata.mm.visualization import SegViser, BaseVisHook, LocalVisBackend
 from mgamdata.process.GeneralPreProcess import WindowSet, InstanceNorm
 from mgamdata.process.LoadBiomedicalData import LoadImageFromMHA, LoadMaskFromMHA, LoadCTPreCroppedSampleFromNpz
-from mgamdata.dataset.Totalsegmentator import Tsd3D_PreCrop_Npz, Tsd_Mha, TSD_CLASS_INDEX_MAP_GENERAL_REDUCTED
+from mgamdata.dataset.FLARE_2023 import FLARE_2023_Precrop_Npz, FLARE_2023_Semi_Mha
 from mgamdata.models.AutoWindow import PackSeg3DInputs_AutoWindow, ParseLabelDistribution
 
 
@@ -46,23 +46,22 @@ resume_optimizer = True
 resume_param_scheduler = True
 
 # Dataset
-pre_crop_data_root = '/zyq_local/mgam_datasets/Totalsegmentator/spacingZ2_sizeXY256_cropZ8_npz/'
-mha_data_root = '/zyq_local/mgam_datasets/Totalsegmentator/spacingZ2_sizeXY256_mha/'
-tsd_meta = '/zyq_remote/mgam_datasets/Totalsegmentator/meta_v2.csv'
-num_classes = 45
+pre_crop_data_root = '/zyq_local/mgam_datasets/FLARE_2023/spacing2_crop96_mha/'
+mha_data_root = '/zyq_local/mgam_datasets/FLARE_2023/spacing2_mha/'
+num_classes = 15
 val_sample_ratio = 1.0 if not debug else 0.1
 wl = 50     # window loacation
 ww = 400    # window width
-pad_val = 0
+pad_val = -5
 seg_pad_val = 0
 
 # Neural Network Hyperparameters
 lr = 1e-4
-batch_size = 4
+batch_size = 8
 grad_accumulation = 1
 weight_decay = 0
 in_channels = 1
-size = (8,256,256)
+size = (96,96,96)
 
 # PMWP Sub-Network Hyperparameters
 data_range = [-1024,3072]
@@ -76,7 +75,7 @@ enable_TRec_loss = False
 enable_CWF = True
 
 # Training Strategy
-iters = 100000 if not debug else 3
+iters = 500000 if not debug else 3
 logger_interval = 100 if not debug else 1
 save_interval = 5000 if not debug else 2
 val_on_train = True
@@ -99,7 +98,7 @@ train_pipeline = [
     dict(type=LoadCTPreCroppedSampleFromNpz, load_type=['img', 'anno']),
     dict(type=ParseLabelDistribution),
     # dict(type=WindowSet, level=wl, width=ww),
-    # dict(type=InstanceNorm),
+    dict(type=InstanceNorm),
     dict(type=PackSeg3DInputs_AutoWindow)
 ]
 
@@ -108,7 +107,7 @@ val_pipeline = test_pipeline = [
     dict(type=LoadMaskFromMHA),
     dict(type=ParseLabelDistribution),
     # dict(type=WindowSet, level=wl, width=ww),
-    # dict(type=InstanceNorm),
+    dict(type=InstanceNorm),
     dict(type=PackSeg3DInputs_AutoWindow)
 ]
 
@@ -123,11 +122,10 @@ train_dataloader = dict(
         type=InfiniteSampler,
         shuffle=False if debug else True),
     dataset=dict(
-        type=Tsd3D_PreCrop_Npz,
+        type=FLARE_2023_Precrop_Npz,
         split='train',
-        meta_csv=tsd_meta,
         data_root=pre_crop_data_root,
-        class_reduction=TSD_CLASS_INDEX_MAP_GENERAL_REDUCTED,
+        data_root_mha=mha_data_root,
         pipeline=train_pipeline,
         debug=debug,
     ),
@@ -142,11 +140,10 @@ val_dataloader = dict(
         shuffle=False,
         use_sample_ratio=val_sample_ratio),
     dataset=dict(
-        type=Tsd_Mha,
+        type=FLARE_2023_Semi_Mha,
         split='val',
         data_root=mha_data_root,
-        class_reduction=TSD_CLASS_INDEX_MAP_GENERAL_REDUCTED,
-        meta_csv=tsd_meta,
+        data_root_mha=mha_data_root,
         pipeline=val_pipeline,
         debug=debug,
     ),
@@ -158,11 +155,10 @@ test_dataloader = dict(
     persistent_workers=True if workers > 0 else False,
     sampler=dict(type=DefaultSampler, shuffle=False),
     dataset=dict(
-        type=Tsd_Mha,
+        type=FLARE_2023_Semi_Mha,
         split='test',
         data_root=mha_data_root,
-        class_reduction=TSD_CLASS_INDEX_MAP_GENERAL_REDUCTED,
-        meta_csv=tsd_meta,
+        data_root_mha=mha_data_root,
         pipeline=test_pipeline,
         debug=debug,
     ),
