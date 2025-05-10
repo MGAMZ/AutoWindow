@@ -36,7 +36,7 @@ debug = False   # 调试模式
 use_AMP = True  # AMP加速
 dist = True if not debug else False  # 分布式使能
 MP_mode = "ddp"  # 分布式计算模式 Literal[`"ddp", "fsdp", "deepspeed"]
-Compile = False if not debug else False  # torch.dynamo
+Compile = True if not debug else False  # torch.dynamo
 workers = 4 if not debug else 0  # DataLoader Worker
 
 # Starting
@@ -46,8 +46,8 @@ resume_optimizer = True
 resume_param_scheduler = True
 
 # Dataset
-pre_crop_data_root = '/zyq_local/mgam_datasets/Totalsegmentator/spacing2_crop64-96-96_npz/'
-mha_data_root = '/zyq_local/mgam_datasets/Totalsegmentator/spacing2_mha/'
+pre_crop_data_root = '/zyq_local/mgam_datasets/Totalsegmentator/spacingZ2_sizeXY256_cropZ16_npz/'
+mha_data_root = '/zyq_local/mgam_datasets/Totalsegmentator/spacingZ2_sizeXY256_mha/'
 tsd_meta = '/zyq_remote/mgam_datasets/Totalsegmentator/meta_v2.csv'
 num_classes = 45
 val_sample_ratio = 1.0 if not debug else 0.1
@@ -62,7 +62,7 @@ batch_size = 4
 grad_accumulation = 1
 weight_decay = 0
 in_channels = 1
-size = (64,96,96)
+size = (16,256,256)
 
 # PMWP Sub-Network Hyperparameters
 data_range = [-1024,3072]
@@ -220,7 +220,7 @@ param_scheduler = [
     dict(
         type=LinearLR,
         start_factor=1e-3,
-        end=iters*0.005,
+        end=iters*0.1,
         by_epoch=False,
     ),
     dict(

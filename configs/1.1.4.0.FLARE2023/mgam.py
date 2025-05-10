@@ -1,4 +1,7 @@
-from torch.optim.sgd import SGD
+from mmengine.config import read_base
+with read_base():
+    from ..base_totalsegmentator_dataset import *
+
 from torch.optim.adamw import AdamW
 from torch.distributed.fsdp.api import ShardingStrategy
 
@@ -23,13 +26,13 @@ from mgamdata.mm.mmeng_PlugIn import RemasteredDDP, RatioSampler, LoggerJSON, mg
 from mgamdata.mm.mmseg_Dev3D import Seg3DDataPreProcessor
 from mgamdata.mm.visualization import SegViser, BaseVisHook, LocalVisBackend
 from mgamdata.process.GeneralPreProcess import WindowSet, InstanceNorm
-from mgamdata.process.LoadBiomedicalData import LoadImageFromMHA, LoadMaskFromMHA, LoadCTPreCroppedSampleFromNpz
-from mgamdata.dataset.FLARE_2023 import FLARE_2023_Precrop_Npz, FLARE_2023_Semi_Mha
+from mgamdata.process.LoadBiomedicalData import LoadImageFromMHA, LoadMaskFromMHA
+from mgamdata.dataset.FLARE_2023 import FLARE_2023_Patched_Mha, FLARE_2023_Semi_Mha
 from mgamdata.models.AutoWindow import PackSeg3DInputs_AutoWindow, ParseLabelDistribution
 
 
 
-# --------------------PARAMETERS-------------------- #
+# -------------------- PARAMETERS -------------------- #
 
 # PyTorch
 debug = False   # 调试模式
@@ -46,26 +49,26 @@ resume_optimizer = True
 resume_param_scheduler = True
 
 # Dataset
-pre_crop_data_root = '/zyq_local/mgam_datasets/FLARE_2023/spacing2_crop96_mha/'
+patch_data_root = '/zyq_local/mgam_datasets/FLARE_2023/spacing2_patch96_mha/'
 mha_data_root = '/zyq_local/mgam_datasets/FLARE_2023/spacing2_mha/'
 num_classes = 15
 val_sample_ratio = 1.0 if not debug else 0.1
-wl = 50     # window loacation
-ww = 400    # window width
-pad_val = -5
+wl = 35     # window loacation
+ww = 250    # window width
+pad_val = 0
 seg_pad_val = 0
 
 # Neural Network Hyperparameters
 lr = 1e-4
-batch_size = 8
+batch_size = 16
 grad_accumulation = 1
-weight_decay = 0
+weight_decay = 1e-1
 in_channels = 1
 size = (96,96,96)
 
 # PMWP Sub-Network Hyperparameters
 data_range = [-1024,3072]
-num_windows = None
+num_windows = 32
 num_rect = 8
 pmwp_lr_mult = None
 TRec_rect_momentum = 0.999
@@ -75,15 +78,17 @@ enable_TRec_loss = False
 enable_CWF = True
 
 # Training Strategy
-iters = 500000 if not debug else 3
+iters = 100000 if not debug else 3
 logger_interval = 100 if not debug else 1
 save_interval = 5000 if not debug else 2
 val_on_train = True
-val_interval = 500 if not debug else 2
+val_interval = 100 if not debug else 2
 vis_interval = 100
 # dynamic_intervals = None
 dynamic_intervals = [ # 动态验证间隔
-    (250, 500),
+    (5, 50),
+    (100, 100),
+    (300, 500),
     (2000, 1000),
     (5000, 5000)
 ]
@@ -95,10 +100,11 @@ dynamic_intervals = [ # 动态验证间隔
 
 # 数据读取与预处理管线
 train_pipeline = [
-    dict(type=LoadCTPreCroppedSampleFromNpz, load_type=['img', 'anno']),
+    dict(type=LoadImageFromMHA),
+    dict(type=LoadMaskFromMHA),
     dict(type=ParseLabelDistribution),
     # dict(type=WindowSet, level=wl, width=ww),
-    dict(type=InstanceNorm),
+    # dict(type=InstanceNorm),
     dict(type=PackSeg3DInputs_AutoWindow)
 ]
 
@@ -107,7 +113,7 @@ val_pipeline = test_pipeline = [
     dict(type=LoadMaskFromMHA),
     dict(type=ParseLabelDistribution),
     # dict(type=WindowSet, level=wl, width=ww),
-    dict(type=InstanceNorm),
+    # dict(type=InstanceNorm),
     dict(type=PackSeg3DInputs_AutoWindow)
 ]
 
@@ -122,10 +128,9 @@ train_dataloader = dict(
         type=InfiniteSampler,
         shuffle=False if debug else True),
     dataset=dict(
-        type=FLARE_2023_Precrop_Npz,
+        type=FLARE_2023_Patched_Mha,
         split='train',
-        data_root=pre_crop_data_root,
-        data_root_mha=mha_data_root,
+        data_root=patch_data_root,
         pipeline=train_pipeline,
         debug=debug,
     ),
@@ -142,8 +147,8 @@ val_dataloader = dict(
     dataset=dict(
         type=FLARE_2023_Semi_Mha,
         split='val',
-        data_root=mha_data_root,
         data_root_mha=mha_data_root,
+        data_root=mha_data_root,
         pipeline=val_pipeline,
         debug=debug,
     ),
@@ -157,8 +162,8 @@ test_dataloader = dict(
     dataset=dict(
         type=FLARE_2023_Semi_Mha,
         split='test',
-        data_root=mha_data_root,
         data_root_mha=mha_data_root,
+        data_root=mha_data_root,
         pipeline=test_pipeline,
         debug=debug,
     ),
@@ -216,12 +221,12 @@ param_scheduler = [
     dict(
         type=LinearLR,
         start_factor=1e-3,
-        end=iters*0.005,
+        end=iters*0.1,
         by_epoch=False,
     ),
     dict(
         type=PolyLR,
-        eta_min=lr*1e-2,
+        eta_min=lr*1e-3,
         power=0.6,
         begin=0.3*iters,
         end=0.95*iters,
