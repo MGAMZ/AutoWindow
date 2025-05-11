@@ -66,7 +66,7 @@ size = (16,256,256)
 
 # PMWP Sub-Network Hyperparameters
 data_range = [-1024,3072]
-num_windows = None
+num_windows = 4
 num_rect = 8
 pmwp_lr_mult = None
 TRec_rect_momentum = 0.999
@@ -98,7 +98,7 @@ dynamic_intervals = [ # 动态验证间隔
 train_pipeline = [
     dict(type=LoadCTPreCroppedSampleFromNpz, load_type=['img', 'anno']),
     dict(type=ParseLabelDistribution),
-    dict(type=WindowSet, level=wl, width=ww),
+    # dict(type=WindowSet, level=wl, width=ww),
     # dict(type=InstanceNorm),
     dict(type=PackSeg3DInputs_AutoWindow)
 ]
@@ -107,7 +107,7 @@ val_pipeline = test_pipeline = [
     dict(type=LoadImageFromMHA),
     dict(type=LoadMaskFromMHA),
     dict(type=ParseLabelDistribution),
-    dict(type=WindowSet, level=wl, width=ww),
+    # dict(type=WindowSet, level=wl, width=ww),
     # dict(type=InstanceNorm),
     dict(type=PackSeg3DInputs_AutoWindow)
 ]
@@ -227,7 +227,7 @@ param_scheduler = [
         type=PolyLR,
         eta_min=lr*1e-2,
         power=0.6,
-        begin=0.3*iters,
+        begin=0.5*iters,
         end=0.95*iters,
         by_epoch=False,
     )
