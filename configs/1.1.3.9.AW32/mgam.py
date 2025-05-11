@@ -76,7 +76,7 @@ enable_TRec_loss = False
 enable_CWF = True
 
 # Training Strategy
-iters = 500000 if not debug else 3
+iters = 200000 if not debug else 3
 logger_interval = 100 if not debug else 1
 save_interval = 5000 if not debug else 2
 val_on_train = True
