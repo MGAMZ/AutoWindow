@@ -1,7 +1,4 @@
-from mmengine.config import read_base
-with read_base():
-    from ..base_totalsegmentator_dataset import *
-
+from torch.optim.sgd import SGD
 from torch.optim.adamw import AdamW
 from torch.distributed.fsdp.api import ShardingStrategy
 
@@ -25,9 +22,9 @@ from mgamdata.mm.mmseg_PlugIn import IoUMetric_PerClass
 from mgamdata.mm.mmeng_PlugIn import RemasteredDDP, RatioSampler, LoggerJSON, mgam_OptimWrapperConstructor, RemasteredFSDP_Strategy
 from mgamdata.mm.mmseg_Dev3D import Seg3DDataPreProcessor
 from mgamdata.mm.visualization import SegViser, BaseVisHook, LocalVisBackend
-from mgamdata.process.GeneralPreProcess import WindowSet, TypeConvert, InstanceNorm
+from mgamdata.process.GeneralPreProcess import WindowSet, InstanceNorm
 from mgamdata.process.LoadBiomedicalData import LoadImageFromMHA, LoadMaskFromMHA, LoadCTPreCroppedSampleFromNpz
-from mgamdata.dataset.AbdomenCT_1K.mm_dataset import AbdomenCT_1K_Semi_Mha, AbdomenCT_1K_Precrop_Npz
+from mgamdata.dataset.Totalsegmentator import Tsd3D_PreCrop_Npz, Tsd_Mha, TSD_CLASS_INDEX_MAP_GENERAL_REDUCTED
 from mgamdata.models.AutoWindow import PackSeg3DInputs_AutoWindow, ParseLabelDistribution
 
 
@@ -49,32 +46,33 @@ resume_optimizer = True
 resume_param_scheduler = True
 
 # Dataset
-pre_crop_data_root = '/home/zhangyq.sx/mgam_datasets/Totalsegmentator/spacing_Z2_mha/'
-mha_data_root = '/home/zhangyq.sx/mgam_datasets/Totalsegmentator/spacing_Z2_mha/'
-num_classes = 5
+pre_crop_data_root = '/zyq_local/mgam_datasets/Totalsegmentator/spacingZ2_sizeXY256_cropZ16_npz/'
+mha_data_root = '/zyq_local/mgam_datasets/Totalsegmentator/spacingZ2_sizeXY256_mha/'
+tsd_meta = '/zyq_remote/mgam_datasets/Totalsegmentator/meta_v2.csv'
+num_classes = 45
 val_sample_ratio = 1.0 if not debug else 0.1
-wl = 40     # window loacation
-ww = 800    # window width
+wl = 50     # window loacation
+ww = 400    # window width
 pad_val = 0
 seg_pad_val = 0
 
 # Neural Network Hyperparameters
-lr = 5e-4
-batch_size = 8
+lr = 1e-4
+batch_size = 4
 grad_accumulation = 1
-weight_decay = 1e-2
+weight_decay = 0
 in_channels = 1
-size = (96,96,96)
+size = (16,256,256)
 
 # PMWP Sub-Network Hyperparameters
 data_range = [-1024,3072]
-num_windows = 4
+num_windows = None
 num_rect = 8
 pmwp_lr_mult = None
 TRec_rect_momentum = 0.999
-enable_WinE_loss = True
+enable_WinE_loss = False
 enable_TRec = True
-enable_TRec_loss = True
+enable_TRec_loss = False
 enable_CWF = True
 
 # Training Strategy
@@ -82,13 +80,11 @@ iters = 200000 if not debug else 3
 logger_interval = 100 if not debug else 1
 save_interval = 5000 if not debug else 2
 val_on_train = True
-val_interval = 100 if not debug else 2
+val_interval = 500 if not debug else 2
 vis_interval = 100
 # dynamic_intervals = None
 dynamic_intervals = [ # 动态验证间隔
-    (5, 50),
-    (100, 100),
-    (300, 500),
+    (250, 500),
     (2000, 1000),
     (5000, 5000)
 ]
@@ -102,7 +98,7 @@ dynamic_intervals = [ # 动态验证间隔
 train_pipeline = [
     dict(type=LoadCTPreCroppedSampleFromNpz, load_type=['img', 'anno']),
     dict(type=ParseLabelDistribution),
-    dict(type=WindowSet, location=wl, width=ww),
+    # dict(type=WindowSet, level=wl, width=ww),
     # dict(type=InstanceNorm),
     dict(type=PackSeg3DInputs_AutoWindow)
 ]
@@ -111,7 +107,7 @@ val_pipeline = test_pipeline = [
     dict(type=LoadImageFromMHA),
     dict(type=LoadMaskFromMHA),
     dict(type=ParseLabelDistribution),
-    dict(type=WindowSet, location=wl, width=ww),
+    # dict(type=WindowSet, level=wl, width=ww),
     # dict(type=InstanceNorm),
     dict(type=PackSeg3DInputs_AutoWindow)
 ]
@@ -127,11 +123,11 @@ train_dataloader = dict(
         type=InfiniteSampler,
         shuffle=False if debug else True),
     dataset=dict(
-        type=AbdomenCT_1K_Precrop_Npz,
+        type=Tsd3D_PreCrop_Npz,
         split='train',
-        mode='sup',
-        data_root_mha=mha_data_root,
+        meta_csv=tsd_meta,
         data_root=pre_crop_data_root,
+        class_reduction=TSD_CLASS_INDEX_MAP_GENERAL_REDUCTED,
         pipeline=train_pipeline,
         debug=debug,
     ),
@@ -146,10 +142,11 @@ val_dataloader = dict(
         shuffle=False,
         use_sample_ratio=val_sample_ratio),
     dataset=dict(
-        type=AbdomenCT_1K_Semi_Mha,
+        type=Tsd_Mha,
         split='val',
-        data_root_mha=mha_data_root,
         data_root=mha_data_root,
+        class_reduction=TSD_CLASS_INDEX_MAP_GENERAL_REDUCTED,
+        meta_csv=tsd_meta,
         pipeline=val_pipeline,
         debug=debug,
     ),
@@ -161,10 +158,11 @@ test_dataloader = dict(
     persistent_workers=True if workers > 0 else False,
     sampler=dict(type=DefaultSampler, shuffle=False),
     dataset=dict(
-        type=AbdomenCT_1K_Semi_Mha,
+        type=Tsd_Mha,
         split='test',
-        data_root_mha=mha_data_root,
         data_root=mha_data_root,
+        class_reduction=TSD_CLASS_INDEX_MAP_GENERAL_REDUCTED,
+        meta_csv=tsd_meta,
         pipeline=test_pipeline,
         debug=debug,
     ),
@@ -222,14 +220,14 @@ param_scheduler = [
     dict(
         type=LinearLR,
         start_factor=1e-3,
-        end=iters*0.005,
+        end=iters*0.1,
         by_epoch=False,
     ),
     dict(
         type=PolyLR,
         eta_min=lr*1e-2,
         power=0.6,
-        begin=0.3*iters,
+        begin=0.5*iters,
         end=0.95*iters,
         by_epoch=False,
     )
@@ -260,7 +258,6 @@ default_hooks = dict(
 visualizer = dict(
     type=SegViser,
     vis_backends=[dict(type=LocalVisBackend), dict(type=TensorboardVisBackend)],
-    plt_invert=True,
     dim=3)
 
 # torch.dynamo

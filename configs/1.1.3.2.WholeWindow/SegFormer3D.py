@@ -4,7 +4,7 @@ with read_base():
 
 from mgamdata.models.AutoWindow import ParalleledMultiWindowProcessing, AutoWindowStatusLoggerHook, AutoWindowLite
 from mgamdata.models.SegFormer3D.Remastered import SegFormer3D
-from mgamdata.mm.mmseg_Dev3D import DiceLoss_3D
+from mgamdata.criterions.segment import DiceLoss_3D
 
 custom_hooks = [
     dict(type=AutoWindowStatusLoggerHook,
@@ -33,19 +33,17 @@ model = dict(
     inference_PatchSize=size,
     inference_PatchStride=[s//2 for s in size],
     inference_PatchAccumulateDevice='cuda',
+    inference_EmptyCache=False,
     backbone=dict(
         type=SegFormer3D,
         in_channels=in_channels if num_windows is None else in_channels*num_windows, # pyright: ignore
         num_classes=num_classes,
-        embed_dims=[256, 512, 1024, 1024],
-        num_heads=[4, 8, 16, 32],
+        embed_dims=[64, 128, 256, 512],
+        num_heads=[4, 4, 8, 8],
         depths=[2, 2, 2, 2],
-        mlp_ratios=[2, 2, 2, 2],
-        sr_ratios=[4, 2, 2, 1],
-        patch_kernel_size=[3, 3, 3, 3],
-        patch_stride=[2, 2, 2, 2],
-        patch_padding=[1, 1, 1, 1],
-        decoder_head_embedding_dim=512,
+        mlp_ratios=[1, 1, 1, 1],
+        sr_ratios=[(4,4,4), (2,2,2), (1,2,2), (1,2,2)],
+        decoder_head_embedding_dim=128,
     ),
     criterion=dict(
         type=DiceLoss_3D,
@@ -53,7 +51,7 @@ model = dict(
         to_onehot_y=True,
         sigmoid=False,
         softmax=True,
-        squared_pred=True,
-        include_background=False,
+        squared_pred=False,
+        batch=True,
     )
 )

@@ -51,6 +51,7 @@ model = dict(
         to_onehot_y=True,
         sigmoid=False,
         softmax=True,
-        squared_pred=False
+        squared_pred=False,
+        batch=True,
     )
 )
