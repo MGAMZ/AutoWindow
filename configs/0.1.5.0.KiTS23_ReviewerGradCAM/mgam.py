@@ -27,7 +27,7 @@ from mgamdata.mm.mmseg_Dev3D import Seg3DDataPreProcessor
 from mgamdata.mm.visualization import SegViser, BaseVisHook, LocalVisBackend
 from mgamdata.process.GeneralPreProcess import WindowSet, InstanceNorm
 from mgamdata.process.LoadBiomedicalData import LoadImageFromMHA, LoadMaskFromMHA, LoadCTPreCroppedSampleFromNpz
-from mgamdata.dataset.FLARE_2023 import FLARE_2023_Patched_Mha, FLARE_2023_Semi_Mha
+from mgamdata.dataset.KiTS23 import KiTS23_Precrop_Npz, KiTS23_Mha
 from mgamdata.models.AutoWindow import PackSeg3DInputs_AutoWindow, ParseLabelDistribution
 
 
@@ -39,18 +39,18 @@ debug = True   # 调试模式
 use_AMP = True  # AMP加速
 dist = False if not debug else False  # 分布式使能
 MP_mode = "ddp"  # 分布式计算模式 Literal[`"ddp", "fsdp", "deepspeed"]
-Compile = True if not debug else False  # torch.dynamo
+Compile = False
 workers = 4 if not debug else 0  # DataLoader Worker
 
 # Starting
-resume = True
-load_from = None
+resume = False
+load_from = '/mnt/e/mgam_projects/AutoWindow/work_dirs/0.1.4.6.KiTS23_AW16/SegFormer3D/best_Perf_mDice_iter_5000.pth'
 resume_optimizer = True
 resume_param_scheduler = True
 
 # Dataset
-patch_data_root = '/mnt/h/mgam_datasets/FLARE_2023/spacing2_patch96_mha/'
-mha_data_root = '/mnt/h/mgam_datasets/FLARE_2023/spacing2_mha/'
+pre_crop_data_root = '/mnt/e/mgam_datasets/KiTS23/spacingZ2_sizeXY256_cropZ16_npz/'
+mha_data_root = '/mnt/e/mgam_datasets/KiTS23/spacingZ2_sizeXY256_mha/'
 num_classes = 4
 val_sample_ratio = 1.0 if not debug else 0.1
 wl = 35     # window loacation
@@ -60,15 +60,15 @@ seg_pad_val = 0
 
 # Neural Network Hyperparameters
 lr = 5e-4
-batch_size = 4
+batch_size = 2
 grad_accumulation = 1
 weight_decay = 1e-2
 in_channels = 1
-size = (96,96,96)
+size = (16,256,256)
 
 # PMWP Sub-Network Hyperparameters
 data_range = [-1024,3072]
-num_windows = 32
+num_windows = 16
 num_rect = 8
 pmwp_lr_mult = None
 TRec_rect_momentum = 0.999
@@ -100,8 +100,7 @@ dynamic_intervals = [ # 动态验证间隔
 
 # 数据读取与预处理管线
 train_pipeline = [
-    dict(type=LoadImageFromMHA),
-    dict(type=LoadMaskFromMHA),
+    dict(type=LoadCTPreCroppedSampleFromNpz, load_type=['img', 'anno']),
     dict(type=ParseLabelDistribution),
     # dict(type=WindowSet, level=wl, width=ww),
     # dict(type=InstanceNorm),
@@ -126,11 +125,13 @@ train_dataloader = dict(
     persistent_workers=True if workers > 0 else False,
     sampler=dict(
         type=InfiniteSampler,
-        shuffle=False if debug else True),
+        shuffle=False),
     dataset=dict(
-        type=FLARE_2023_Patched_Mha,
+        type=KiTS23_Precrop_Npz,
         split='train',
-        data_root=patch_data_root,
+        mode='sup',
+        data_root_mha=mha_data_root,
+        data_root=pre_crop_data_root,
         pipeline=train_pipeline,
         debug=debug,
     ),
@@ -145,7 +146,7 @@ val_dataloader = dict(
         shuffle=False,
         use_sample_ratio=val_sample_ratio),
     dataset=dict(
-        type=FLARE_2023_Semi_Mha,
+        type=KiTS23_Mha,
         split='val',
         data_root_mha=mha_data_root,
         data_root=mha_data_root,
@@ -160,7 +161,7 @@ test_dataloader = dict(
     persistent_workers=True if workers > 0 else False,
     sampler=dict(type=DefaultSampler, shuffle=False),
     dataset=dict(
-        type=FLARE_2023_Semi_Mha,
+        type=KiTS23_Mha,
         split='test',
         data_root_mha=mha_data_root,
         data_root=mha_data_root,
