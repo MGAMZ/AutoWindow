@@ -1,19 +1,23 @@
 # Interpretable Auto Window Setting for Deep-Learning-Based CT Analysis
 
-Official Implementations
-Preview V1.0
+*Yiqin Zhang, Meiling Chen, Zhengjie Zhang*
+
+🎉 2025.08.31: The paper has been accepted by CBM. 🎉
+📄 [CBM paper link](https://www.sciencedirect.com/science/article/pii/S0010482525013460)
+📚 [ArXiv](https://arxiv.org/abs/2501.06223)
 
 ## Pre-requisites
 
 - Python 3.10+
 - PyTorch 2.4.0+
-- mgamdata package: [Gitee Repo](https://gitee.com/MGAM/mgam_datatoolkit)
+- ~~mgamdata package: [Gitee Repo](https://gitee.com/MGAM/mgam_datatoolkit)~~
+- ITKIT package: [Gitee Repo](https://gitee.com/MGAM/itkit)
 - mmsegmentation redistribution: [Gitee Repo](https://gitee.com/MGAM/mmsegmentation)
 - mmengine redistribution: [Gitee Repo](https://gitee.com/MGAM/mmengine)
 - mmpretrain redistribution: [Gitee Repo](https://gitee.com/MGAM/mmpretrain)
 - NVIDIA CUDA
 
-This research heavily relies on our mgamdata package, the AutoWindow Module can be found in [Gitee Repo](`https://gitee.com/MGAM/mgam_datatoolkit/blob/v1.11/mgamdata/models/AutoWindow.py`).
+This research heavily relies on our `ITKIT` package, the AutoWindow Module can be found in [Gitee Repo](`https://gitee.com/MGAM/itkit/blob/v1.11/mgamdata/models/AutoWindow.py`).
 
 ## Environment Setup
 
@@ -123,6 +127,8 @@ You may have to modify the config file according to specify your dataset path. A
 ```bash
 mmrun {ConfigVersionPrefix}
 ```
+
+ConfigVersionPrefix Example: `1.1.4.1`
 
 ## Email
 
