@@ -135,3 +135,20 @@ ConfigVersionPrefix Example: `1.1.4.1`
 For any questions, please contact us via email:
 
 [Yiqin Zhang](mailto:312065559@qq.com) (Corresponding Author)
+
+## Citations
+
+```bibtex
+@article{ZHANG2025110994,
+    title = {Interpretable Auto Window setting for deep-learning-based CT analysis},
+    journal = {Computers in Biology and Medicine},
+    volume = {197},
+    pages = {110994},
+    year = {2025},
+    issn = {0010-4825},
+    doi = {https://doi.org/10.1016/j.compbiomed.2025.110994},
+    url = {https://www.sciencedirect.com/science/article/pii/S0010482525013460},
+    author = {Yiqin Zhang and Meiling Chen and Zhengjie Zhang},
+    keywords = {Deep learning, Medical image analysis, Computed tomography, Multi-window processing, Medical fundamental models},
+}
+```
