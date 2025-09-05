@@ -20,16 +20,16 @@ from mmengine.visualization import LocalVisBackend
 from mmengine.visualization import TensorboardVisBackend
 
 # customize
-from mgamdata.mm.mmeng_PlugIn import LoggerJSON
-from mgamdata.mm.mmseg_PlugIn import IoUMetric_PerClass
-from mgamdata.mm.mmeng_PlugIn import RemasteredDDP, RemasteredFSDP, RatioSampler
-from mgamdata.process.GeneralPreProcess import WindowSet, TypeConvert, InstanceNorm
-from mgamdata.process.LoadBiomedicalData import LoadImageFromMHA, LoadMaskFromMHA, LoadSampleFromNpz
-from mgamdata.dataset.FLARE_2023.mm_dataset import (
+from itkit.mm.mmeng_PlugIn import LoggerJSON
+from itkit.mm.mmseg_PlugIn import IoUMetric_PerClass
+from itkit.mm.mmeng_PlugIn import RemasteredDDP, RemasteredFSDP, RatioSampler
+from itkit.process.GeneralPreProcess import WindowSet, TypeConvert, InstanceNorm
+from itkit.process.LoadBiomedicalData import LoadImageFromMHA, LoadMaskFromMHA, LoadSampleFromNpz
+from itkit.dataset.FLARE_2023.mm_dataset import (
     FLARE_2023_Mha, FLARE_2023_Precrop_Npz)
-from mgamdata.dataset.base import ParseID
-from mgamdata.mm.mmseg_Dev3D import Seg3DDataPreProcessor, Seg3DLocalVisualizer, Seg3DVisualizationHook
-from mgamdata.models.AutoWindow import PackSeg3DInputs_AutoWindow, ParseLabelDistribution
+from itkit.dataset.base import ParseID
+from itkit.mm.mmseg_Dev3D import Seg3DDataPreProcessor, Seg3DLocalVisualizer, Seg3DVisualizationHook
+from src.model import PackSeg3DInputs_AutoWindow, ParseLabelDistribution
 
 
 

@@ -2,9 +2,9 @@ from mmengine.config import read_base
 with read_base():
     from .mgam import *
 
-from mgamdata.models.AutoWindow import ParalleledMultiWindowProcessing, AutoWindowStatusLoggerHook, AutoWindowLite
-from mgamdata.models.SegFormer3D.Remastered import SegFormer3D
-from mgamdata.criterions.segment import DiceLoss_3D
+from src.model import ParalleledMultiWindowProcessing, AutoWindowStatusLoggerHook, AutoWindowLite
+from itkit.models.SegFormer3D.Remastered import SegFormer3D
+from itkit.criterions.segment import DiceLoss_3D
 
 custom_hooks = [
     dict(type=AutoWindowStatusLoggerHook,

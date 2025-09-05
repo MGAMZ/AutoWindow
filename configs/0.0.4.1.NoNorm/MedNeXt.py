@@ -2,10 +2,10 @@ from mmengine.config import read_base
 with read_base():
     from .mgam import *
 
-from mgamdata.models.AutoWindow import (
+from src.model import (
     AutoWindowSetting, ParalleledMultiWindowProcessing, AutoWindowStatusLoggerHook, EncoderDecoder_3D)
-from mgamdata.models.MedNeXt import MM_MedNext_Encoder, MM_MedNext_Decoder_3D
-from mgamdata.mm.mmseg_Dev3D import DiceLoss_3D
+from itkit.models.MedNeXt import MM_MedNext_Encoder, MM_MedNext_Decoder_3D
+from itkit.mm.mmseg_Dev3D import DiceLoss_3D
 
 
 # custom_hooks = [

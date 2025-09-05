@@ -14,7 +14,7 @@ from mmengine.visualization import LocalVisBackend
 from mmengine.visualization import TensorboardVisBackend
 
 # customize
-from mgamdata.mm.mmeng_PlugIn import LoggerJSON
+from itkit.mm.mmeng_PlugIn import LoggerJSON
 
 
 # Task Control

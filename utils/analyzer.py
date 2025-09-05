@@ -10,7 +10,7 @@ from matplotlib.ticker import MaxNLocator
 from sklearn.metrics import confusion_matrix
 
 from inference import Inferencer_3D
-from mgamdata.models.AutoWindow import AutoWindowSetting
+from src.model import AutoWindowSetting
 
 
 CMAP_SEQ_COLOR = ["winter", "RdPu"]
@@ -466,9 +466,9 @@ def analyze_one_exp(
 
 
 if __name__ == "__main__":
-    from mgamdata.dataset.AbdomenCT_1K.meta import CLASS_INDEX_MAP as AbdomenCT1K_Map
-    from mgamdata.dataset.KiTS23.meta import CLASS_INDEX_MAP as KiTS23_Map
-    from mgamdata.dataset.ImageTBAD.meta import CLASS_INDEX_MAP as ImageTBAD_Map
+    from itkit.dataset.AbdomenCT_1K.meta import CLASS_INDEX_MAP as AbdomenCT1K_Map
+    from itkit.dataset.KiTS23.meta import CLASS_INDEX_MAP as KiTS23_Map
+    from itkit.dataset.ImageTBAD.meta import CLASS_INDEX_MAP as ImageTBAD_Map
 
     # AbdomenCT_1K
     analyze_one_exp(

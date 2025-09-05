@@ -1,5 +1,5 @@
-from mgamdata.dataset.Totalsegmentator.meta import CLASS_INDEX_MAP as Tsd_Map
-from mgamdata.dataset.FLARE_2023.meta import CLASS_INDEX_MAP as FLARE23_Map
+from itkit.dataset.Totalsegmentator.meta import CLASS_INDEX_MAP as Tsd_Map
+from itkit.dataset.FLARE_2023.meta import CLASS_INDEX_MAP as FLARE23_Map
 from analyzer import analyze_one_exp
 
 

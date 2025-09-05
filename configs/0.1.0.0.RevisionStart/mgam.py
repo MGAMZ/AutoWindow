@@ -19,16 +19,16 @@ from mmengine.dataset.sampler import DefaultSampler, InfiniteSampler
 from mmengine.visualization import TensorboardVisBackend
 
 # customize
-from mgamdata.mm.mmeng_PlugIn import LoggerJSON
-from mgamdata.mm.mmseg_PlugIn import IoUMetric_PerClass
-from mgamdata.mm.mmeng_PlugIn import RemasteredDDP, RemasteredFSDP, RatioSampler
-from mgamdata.process.GeneralPreProcess import WindowSet, TypeConvert, InstanceNorm
-from mgamdata.process.LoadBiomedicalData import LoadImageFromMHA, LoadMaskFromMHA, LoadCTPreCroppedSampleFromNpz
-from mgamdata.dataset.AbdomenCT_1K.mm_dataset import (AbdomenCT_1K_Semi_Mha, AbdomenCT_1K_Precrop_Npz)
-from mgamdata.dataset.base import ParseID
-from mgamdata.mm.mmseg_Dev3D import Seg3DDataPreProcessor
-from mgamdata.mm.visualization import SegViser, BaseVisHook, LocalVisBackend
-from mgamdata.models.AutoWindow import PackSeg3DInputs_AutoWindow, ParseLabelDistribution
+from itkit.mm.mmeng_PlugIn import LoggerJSON
+from itkit.mm.mmseg_PlugIn import IoUMetric_PerClass
+from itkit.mm.mmeng_PlugIn import RemasteredDDP, RemasteredFSDP, RatioSampler
+from itkit.process.GeneralPreProcess import WindowSet, TypeConvert, InstanceNorm
+from itkit.process.LoadBiomedicalData import LoadImageFromMHA, LoadMaskFromMHA, LoadCTPreCroppedSampleFromNpz
+from itkit.dataset.AbdomenCT_1K.mm_dataset import (AbdomenCT_1K_Semi_Mha, AbdomenCT_1K_Precrop_Npz)
+from itkit.dataset.base import ParseID
+from itkit.mm.mmseg_Dev3D import Seg3DDataPreProcessor
+from itkit.mm.visualization import SegViser, BaseVisHook, LocalVisBackend
+from src.model import PackSeg3DInputs_AutoWindow, ParseLabelDistribution
 
 
 

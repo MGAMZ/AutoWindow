@@ -9,8 +9,8 @@ import SimpleITK as sitk
 import numpy as np
 from tqdm import tqdm
 
-from mgamdata.mm.inference import Inferencer
-from mgamdata.models.AutoWindow import AutoWindowSetting
+from itkit.mm.inference import Inferencer
+from src.model import AutoWindowSetting
 
 
 

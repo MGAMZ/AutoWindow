@@ -21,14 +21,14 @@ from mmengine.dataset.sampler import DefaultSampler, InfiniteSampler
 from mmengine.visualization import TensorboardVisBackend
 
 # customize
-from mgamdata.mm.mmseg_PlugIn import IoUMetric_PerClass
-from mgamdata.mm.mmeng_PlugIn import RemasteredDDP, RatioSampler, LoggerJSON, mgam_OptimWrapperConstructor, RemasteredFSDP_Strategy
-from mgamdata.mm.mmseg_Dev3D import Seg3DDataPreProcessor
-from mgamdata.mm.visualization import SegViser, BaseVisHook, LocalVisBackend
-from mgamdata.process.GeneralPreProcess import WindowSet, InstanceNorm
-from mgamdata.process.LoadBiomedicalData import LoadImageFromMHA, LoadMaskFromMHA, LoadCTPreCroppedSampleFromNpz
-from mgamdata.dataset.CTSpine1K import CTSpine1K_Mha, CTSpine1K_Precrop_Npz
-from mgamdata.models.AutoWindow import PackSeg3DInputs_AutoWindow, ParseLabelDistribution
+from itkit.mm.mmseg_PlugIn import IoUMetric_PerClass
+from itkit.mm.mmeng_PlugIn import RemasteredDDP, RatioSampler, LoggerJSON, mgam_OptimWrapperConstructor, RemasteredFSDP_Strategy
+from itkit.mm.mmseg_Dev3D import Seg3DDataPreProcessor
+from itkit.mm.visualization import SegViser, BaseVisHook, LocalVisBackend
+from itkit.process.GeneralPreProcess import WindowSet, InstanceNorm
+from itkit.process.LoadBiomedicalData import LoadImageFromMHA, LoadMaskFromMHA, LoadCTPreCroppedSampleFromNpz
+from itkit.dataset.CTSpine1K import CTSpine1K_Mha, CTSpine1K_Precrop_Npz
+from src.model import PackSeg3DInputs_AutoWindow, ParseLabelDistribution
 
 
 
