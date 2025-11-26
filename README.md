@@ -10,14 +10,18 @@
 
 - Python 3.10+
 - PyTorch 2.4.0+
+- [ITKIT](https://github.com/MGAMZ/ITKIT)
 - ~~mgamdata package: [Gitee Repo](https://gitee.com/MGAM/mgam_datatoolkit)~~
-- ITKIT package: [Gitee Repo](https://gitee.com/MGAM/itkit)
-- mmsegmentation redistribution: [Gitee Repo](https://gitee.com/MGAM/mmsegmentation)
-- mmengine redistribution: [Gitee Repo](https://gitee.com/MGAM/mmengine)
-- mmpretrain redistribution: [Gitee Repo](https://gitee.com/MGAM/mmpretrain)
-- NVIDIA CUDA
+- ~~mmsegmentation redistribution: [Gitee Repo](https://gitee.com/MGAM/mmsegmentation)~~
+- ~~mmengine redistribution: [Gitee Repo](https://gitee.com/MGAM/mmengine)~~
+- ~~mmpretrain redistribution: [Gitee Repo](https://gitee.com/MGAM/mmpretrain)~~
 
-This research heavily relies on our `ITKIT` package, the AutoWindow Module can be found in [Gitee Repo](`https://gitee.com/MGAM/itkit/blob/v1.11/mgamdata/models/AutoWindow.py`).
+> [!NOTE]
+> Some dependencies of official implementation is no longer maintained.
+> 
+> I am now actively developing `ITKIT` project, which includes the essential components to re-implement this work. You may refer to its README for more preparation notes.
+> 
+> [ITKIT Project](https://github.com/MGAMZ/ITKIT)
 
 ## Environment Setup
 
